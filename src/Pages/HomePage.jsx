@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import API from '../API/axiosInstance';  // ✅ FIXED: Go up 2 levels (src/Pages -> src -> root)
+import API from '../API/axiosInstance'; 
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Plane, Loader2, AlertCircle, Clock, Users } from 'lucide-react';
 
@@ -12,27 +12,32 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   const handleSearch = async () => {
+    // Basic validation
     if (!search.from || !search.to) {
       setError("Please enter both departure and arrival IATA codes (e.g., MAA, BOM)");
       return;
     }
+    
     setError('');
     setLoading(true);
-    setFlights([]);
+    setFlights([]); // Clear previous results
 
     try {
+      // Send parameters exactly as they appear in your successful Postman test
       const res = await API.get('/flights/search', {
         params: {
-          from: search.from.toUpperCase(),
-          to: search.to.toUpperCase(),
-          date: search.date || undefined
+          from: search.from.trim().toUpperCase(),
+          to: search.to.trim().toUpperCase(),
+          date: search.date || undefined // Date is optional in search
         }
       });
+      
       setFlights(res.data);
       setHasSearched(true);
     } catch (err) {
       console.error("Flight search error:", err);
-      setError("Failed to fetch flights. Please try again.");
+      // Detailed error logging to help identify 429 or 500 errors
+      setError(err.response?.data?.message || "Failed to fetch flights. Please try again.");
       setHasSearched(true);
     } finally {
       setLoading(false);
@@ -45,11 +50,11 @@ const HomePage = () => {
       navigate('/login');
       return;
     }
-    // Save selected flight to localStorage, then navigate to booking
     localStorage.setItem("selectedFlight", JSON.stringify(flight));
     navigate(`/booking/${flight._id}`);
   };
 
+  // Improved formatters to handle IST time from database
   const formatTime = (dateStr) => {
     if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleTimeString('en-IN', {
@@ -79,19 +84,17 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
-
-      {/* ── Hero Search Bar ── */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 py-14 mb-8">
+      {/* Hero Search Bar */}
+      <div className="bg-gradient-to-br from-blue-600 to-blue-800 py-14 mb-8 shadow-inner">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl font-black text-white mb-2">Where to next?</h1>
           <p className="text-blue-200 mb-8 font-medium">Search flights across India</p>
 
           <div className="bg-white rounded-2xl shadow-2xl p-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-3">
-            {/* From */}
-            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:border-blue-400">
+            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:ring-2 focus-within:ring-blue-400">
               <MapPin className="text-blue-400 mr-2 shrink-0" size={18} />
-              <div className="w-full">
-                <p className="text-xs text-slate-400 font-semibold">From</p>
+              <div className="w-full text-left">
+                <p className="text-xs text-slate-400 font-semibold uppercase">From</p>
                 <input
                   type="text"
                   placeholder="MAA"
@@ -103,11 +106,10 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* To */}
-            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:border-blue-400">
+            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:ring-2 focus-within:ring-blue-400">
               <MapPin className="text-red-400 mr-2 shrink-0" size={18} />
-              <div className="w-full">
-                <p className="text-xs text-slate-400 font-semibold">To</p>
+              <div className="w-full text-left">
+                <p className="text-xs text-slate-400 font-semibold uppercase">To</p>
                 <input
                   type="text"
                   placeholder="BOM"
@@ -119,11 +121,10 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Date */}
-            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:border-blue-400">
+            <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border focus-within:ring-2 focus-within:ring-blue-400">
               <Calendar className="text-slate-400 mr-2 shrink-0" size={18} />
-              <div className="w-full">
-                <p className="text-xs text-slate-400 font-semibold">Date</p>
+              <div className="w-full text-left">
+                <p className="text-xs text-slate-400 font-semibold uppercase">Date</p>
                 <input
                   type="date"
                   className="bg-transparent w-full outline-none text-sm font-bold"
@@ -133,32 +134,25 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Search Button */}
             <button
               onClick={handleSearch}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl flex items-center justify-center gap-2 py-3 transition disabled:opacity-50 shadow-lg shadow-blue-200"
             >
-              {loading
-                ? <><Loader2 className="animate-spin" size={18} /> Searching...</>
-                : <><Search size={18} /> SEARCH</>
-              }
+              {loading ? <><Loader2 className="animate-spin" size={18} /> Searching...</> : <><Search size={18} /> SEARCH</>}
             </button>
           </div>
 
-          {/* Error message */}
           {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 max-w-5xl mx-auto text-sm font-semibold flex items-center gap-2">
+            <div className="mt-4 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 max-w-5xl mx-auto text-sm font-semibold flex items-center gap-2 animate-bounce">
               <AlertCircle size={16} /> {error}
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Results ── */}
+      {/* Results Section */}
       <div className="max-w-6xl mx-auto px-4">
-
-        {/* Loading skeleton */}
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
@@ -177,74 +171,62 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Results header */}
         {!loading && hasSearched && (
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-black text-slate-800">
-              {flights.length > 0
-                ? `${flights.length} Flight${flights.length > 1 ? 's' : ''} Found`
-                : 'No Flights Found'}
+              {flights.length > 0 ? `${flights.length} Flight${flights.length > 1 ? 's' : ''} Found` : 'No Flights Found'}
             </h2>
-            {flights.length > 0 && (
-              <p className="text-sm text-slate-400 font-semibold">
-                {search.from.toUpperCase()} → {search.to.toUpperCase()}
-                {search.date && ` • ${formatDate(search.date)}`}
-              </p>
-            )}
           </div>
         )}
 
-        {/* Flight cards */}
+        {/* Flight Cards - mapped exactly to your Postman response */}
         {!loading && hasSearched && flights.length > 0 && (
           <div className="space-y-4">
             {flights.map((f) => (
               <div
                 key={f._id}
-                className="bg-white rounded-2xl border border-slate-200 hover:border-blue-200 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
               >
-                <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-
-                  {/* Left: Airline info */}
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+                <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-5">
+                    <div className="h-14 w-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0 border border-blue-100">
                       <Plane size={24} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-black text-blue-600 text-sm">{f.airline}</span>
+                        <span className="font-black text-blue-600 text-sm uppercase">{f.airline}</span>
                         <span className="text-slate-300">•</span>
-                        <span className="text-slate-400 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">
+                        <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">
                           {f.flightNumber}
                         </span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${getStatusColor(f.status)}`}>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${getStatusColor(f.status)}`}>
                           {f.status}
                         </span>
                       </div>
-                      <h3 className="text-lg font-black text-slate-900">
-                        {f.departureLocation} → {f.arrivalLocation}
+                      <h3 className="text-lg font-black text-slate-900 leading-tight">
+                        {f.departureLocation.split(' ')[0]} ({f.departureIata}) → {f.arrivalLocation.split(' ')[0]} ({f.arrivalIata})
                       </h3>
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                          <Clock size={12} />
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                        <span className="text-slate-500 text-xs font-bold flex items-center gap-1">
+                          <Clock size={12} className="text-blue-400" />
                           {formatTime(f.departureTime)} • {formatDate(f.departureTime)}
                         </span>
-                        <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                          <Users size={12} />
+                        <span className="text-slate-500 text-xs font-bold flex items-center gap-1">
+                          <Users size={12} className="text-blue-400" />
                           {f.seatsAvailable} seats left
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Price + Book */}
-                  <div className="flex flex-row md:flex-col items-center md:items-end gap-3 md:gap-1 ml-auto">
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400 font-semibold">Price per person</p>
+                  <div className="flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-1 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0">
+                    <div className="md:text-right flex-1">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Starting from</p>
                       <p className="text-2xl font-black text-slate-900">₹{f.price?.toLocaleString('en-IN')}</p>
                     </div>
                     <button
                       onClick={() => handleBookNow(f)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-black transition shadow-md shadow-blue-100 whitespace-nowrap"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-sm font-black transition transform active:scale-95 shadow-lg shadow-blue-100 whitespace-nowrap"
                     >
                       Book Now →
                     </button>
@@ -255,21 +237,19 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* No results */}
         {!loading && hasSearched && flights.length === 0 && (
-          <div className="bg-white border rounded-3xl p-20 text-center">
-            <AlertCircle className="mx-auto text-slate-200 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800">No Flights Found</h3>
-            <p className="text-slate-400 text-sm mt-1">Try different IATA codes or remove the date filter</p>
+          <div className="bg-white border rounded-3xl p-16 text-center shadow-sm">
+            <AlertCircle className="mx-auto text-slate-200 mb-4" size={56} />
+            <h3 className="text-xl font-black text-slate-800">No Flights Available</h3>
+            <p className="text-slate-400 text-sm mt-2 font-medium">Try searching for MAA to BOM for March 31, 2026</p>
           </div>
         )}
 
-        {/* Initial state */}
         {!loading && !hasSearched && (
-          <div className="py-20 text-center">
-            <Plane className="mx-auto text-slate-200 mb-4" size={64} />
-            <p className="font-bold text-slate-400">Enter departure and arrival codes above to search flights</p>
-            <p className="text-slate-300 text-sm mt-1">Example: MAA → BOM, DEL → BLR</p>
+          <div className="py-24 text-center opacity-40">
+            <Plane className="mx-auto text-slate-300 mb-4 animate-bounce" size={64} />
+            <p className="font-black text-slate-400 uppercase tracking-widest">Ready for takeoff?</p>
+            <p className="text-slate-400 text-xs mt-1 font-bold">Search above to find available flights</p>
           </div>
         )}
       </div>
