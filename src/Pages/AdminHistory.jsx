@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../API/axiosInstance'; 
+import { Calendar, CheckCircle, XCircle, Download } from 'lucide-react';
 
 const AdminHistory = () => {
   const [history, setHistory] = useState([]);
@@ -9,6 +10,7 @@ const AdminHistory = () => {
     const fetchHistory = async () => {
       try {
         const res = await axios.get('/admin/history'); 
+        // res.data should be the array seen in image_28af4a.png
         setHistory(res.data);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -19,47 +21,57 @@ const AdminHistory = () => {
     fetchHistory();
   }, []);
 
-  if (loading) return <div className="text-center p-10">Loading History...</div>;
+  if (loading) return <div className="text-center p-20 font-bold">Loading...</div>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto w-full">
-      <h2 className="text-2xl font-black mb-6 text-gray-800 border-b pb-2">Admin History Log</h2>
-      {history.length === 0 ? (
-        <div className="bg-white p-10 text-center rounded-xl border-2 border-dashed border-gray-200">
-          <p className="text-gray-500 font-medium">No cancelled or completed records found for the past 7 days.</p>
-        </div>
-      ) : (
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-bold tracking-wider">
-              <tr>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Reference</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {history.map((log) => (
-                <tr key={log._id} className="hover:bg-gray-50 transition">
-                  <td className="p-4 font-semibold text-gray-700">{log.userId?.name || 'Guest'}</td>
-                  <td className="p-4 text-gray-600">{log.details?.bookingReference || 'N/A'}</td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-black ${
-                      log.details?.status === 'Cancelled' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                    }`}>
-                      {log.details?.status}
+    <div className="w-full max-w-5xl mx-auto p-8">
+      <div className="bg-white rounded-2xl shadow-sm border p-8">
+        <h2 className="text-2xl font-black mb-1">Manage Your Bookings Dashboard</h2>
+        <p className="text-gray-500 mb-8">Find your next flight with ease.</p>
+
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-4">Booking History</h3>
+          
+          {history.length === 0 ? (
+            <div className="p-20 text-center border-2 border-dashed rounded-xl text-gray-400">
+              No recent "Completed" or "Cancelled" activity found.
+            </div>
+          ) : (
+            history.map((log) => (
+              <div key={log._id} className="flex items-center justify-between p-5 border rounded-xl bg-white hover:shadow-md transition">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gray-50 rounded-lg text-gray-400">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    {/* Accessing keys based on your DB screenshot */}
+                    <h4 className="font-bold text-gray-900">Reference: {log.bookingId?.slice(-6).toUpperCase() || 'N/A'}</h4>
+                    <p className="text-xs text-gray-500">Date: {new Date(log.timestamp).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-2">
+                    {/* Using 'action' field from your DB */}
+                    {log.action === 'Completed' ? (
+                      <CheckCircle className="text-green-500" size={16} />
+                    ) : (
+                      <XCircle className="text-red-500" size={16} />
+                    )}
+                    <span className={`text-sm font-bold ${log.action === 'Cancelled' ? 'text-red-600' : 'text-green-600'}`}>
+                      {log.action}
                     </span>
-                  </td>
-                  <td className="p-4 text-sm text-gray-400">
-                    {new Date(log.timestamp).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <button className="flex items-center space-x-2 px-4 py-2 border rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50">
+                    <Download size={14} />
+                    <span>Download Receipt</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

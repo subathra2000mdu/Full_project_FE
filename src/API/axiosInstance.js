@@ -1,20 +1,37 @@
 import axios from 'axios';
 
-// This is your common host configuration
+// Create axios instance with backend base URL
 const API = axios.create({
-  baseURL: "http://localhost:3001/api/auth/", // Replace with your MongoDB backend URL
+  baseURL: 'http://localhost:5000/api', // Change 5000 to your backend port if different
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json'
   }
 });
 
-// Optional: Automatically add the token to every request if it exists
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("userToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Add request interceptor to include token
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
+
+// Add response interceptor to handle errors
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('userToken');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default API;
