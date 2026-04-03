@@ -135,7 +135,7 @@ const AdminHistory = () => {
     <div className="w-full min-h-screen bg-slate-50 mx-auto px-4 py-6 sm:py-8">
 
       <div className="max-w-6xl mx-auto">
-        {/* Back button */}
+        
         <div className="mb-6 sm:mb-8">
           <button
             onClick={() => navigate('/')}
@@ -145,7 +145,7 @@ const AdminHistory = () => {
           </button>
         </div>
 
-        {/* Main card */}
+        
         <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-5 sm:p-8 md:p-10">
 
           <header className="mb-6 sm:mb-8">
@@ -154,7 +154,7 @@ const AdminHistory = () => {
               Review and manage all transaction and activity logs.
             </p>
 
-            {/* Tabs */}
+            
             <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit overflow-x-auto">
               {[
                 { key: 'bookings', label: 'All Bookings',   count: bookings.length,     badgeColor: 'bg-blue-100 text-blue-600' },
@@ -178,7 +178,7 @@ const AdminHistory = () => {
             </div>
           </header>
 
-          {/* ALL BOOKINGS TAB */}
+          
           {activeTab === 'bookings' && (
             <div className="space-y-4">
               {bookings.length === 0 ? (
@@ -229,7 +229,7 @@ const AdminHistory = () => {
                         </div>
                       </div>
 
-                      {/* Bottom row: price + status + actions */}
+                      
                       <div className="flex items-center justify-between flex-wrap gap-2 pl-0 sm:pl-16">
                         {log.flight?.price && (
                           <span className="text-base font-black text-slate-800">
@@ -276,7 +276,7 @@ const AdminHistory = () => {
             </div>
           )}
 
-          {/* ACTIVITY LOGS TAB */}
+         
           {activeTab === 'activity' && (
             <div className="space-y-4">
               {activityLogs.length === 0 ? (
@@ -334,7 +334,7 @@ const AdminHistory = () => {
   );
 };
 
-/* ── Sub-components ── */
+
 
 const StatusBadge = ({ status }) => {
   if (status === 'Completed') {

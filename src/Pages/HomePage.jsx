@@ -167,7 +167,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
 
-      {/* ── Search Header ── */}
+      
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 py-10 sm:py-14 mb-6 sm:mb-8">
         <div className="w-full max-w-6xl mx-auto px-4">
           <div className="text-center mb-6 sm:mb-8">
@@ -175,11 +175,11 @@ const HomePage = () => {
             <p className="text-blue-200 font-medium text-sm sm:text-base">Search flights across India</p>
           </div>
 
-          {/* Search card — stacks on mobile, 6-col grid on md+ */}
+          
           <div className="bg-white rounded-2xl shadow-2xl p-3 sm:p-4 w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
 
-              {/* From */}
+              
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <MapPin className="text-blue-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -195,7 +195,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* To */}
+              
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <MapPin className="text-red-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -211,7 +211,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Date */}
+              
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <Calendar className="text-slate-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -225,7 +225,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Passengers */}
+              
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <Users className="text-slate-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -244,7 +244,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Booking Class */}
+              
               <div className="relative">
                 <button
                   onClick={e => { e.stopPropagation(); setShowClassMenu(v => !v); }}
@@ -278,7 +278,7 @@ const HomePage = () => {
                 )}
               </div>
 
-              {/* Search Button */}
+              
               <button
                 onClick={handleSearch}
                 disabled={loading}
@@ -290,7 +290,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Search meta */}
+          
           {hasSearched && (
             <div className="mt-3 flex items-center justify-center gap-3 text-blue-200 text-xs font-semibold">
               <span>{search.passengers} passenger{search.passengers > 1 ? 's' : ''}</span>
@@ -301,7 +301,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* ── Error banner ── */}
+      
       {error && (
         <div className="w-full max-w-6xl mx-auto px-4 mb-4">
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -311,7 +311,7 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* ── Results ── */}
+    
       <div className="w-full max-w-6xl mx-auto px-4">
 
         {loading && (
@@ -352,7 +352,7 @@ const HomePage = () => {
                 >
                   <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 
-                    {/* Left: flight info */}
+                    
                     <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
                       <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 ${
                         booked ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
@@ -397,7 +397,7 @@ const HomePage = () => {
                       </div>
                     </div>
 
-                    {/* Right: price + button */}
+                    
                     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 w-full sm:w-auto shrink-0">
                       <div className="text-left sm:text-right">
                         <p className="text-xs text-slate-400 font-semibold">Price</p>
@@ -439,7 +439,7 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* No flights on date */}
+        
         {!loading && hasSearched && flights.length > 0 && displayedFlights.length === 0 && (
           <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
             <Calendar className="mx-auto text-slate-200 mb-4" size={48} />
@@ -448,7 +448,7 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* No flights at all */}
+       
         {!loading && hasSearched && flights.length === 0 && (
           <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
             <AlertCircle className="mx-auto text-slate-200 mb-4" size={48} />
@@ -457,7 +457,7 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Pre-search */}
+       
         {!loading && !hasSearched && (
           <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
             <Plane className="mx-auto text-slate-200 mb-4" size={48} />

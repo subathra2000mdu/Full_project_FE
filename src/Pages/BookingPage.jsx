@@ -149,7 +149,6 @@ const BookingPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-6 sm:py-10 px-4">
       <div className="w-full max-w-2xl mx-auto">
 
-        {/* Back Button — proper React, not raw HTML */}
         <div className="mb-6">
           <button
             onClick={() => navigate('/')}
@@ -159,7 +158,6 @@ const BookingPage = () => {
           </button>
         </div>
 
-        {/* Flight Summary Card */}
         <div className="bg-white rounded-xl sm:rounded-2xl border-2 border-blue-200 shadow-lg p-5 sm:p-8 mb-5">
           <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-4">Flight Details</h3>
           <div className="space-y-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6">
@@ -200,7 +198,6 @@ const BookingPage = () => {
           </div>
         </div>
 
-        {/* Booking Form Card */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-6">Complete Your Booking</h2>
 
@@ -226,7 +223,7 @@ const BookingPage = () => {
           )}
 
           <div className="space-y-5">
-            {/* Passenger Name */}
+            
             <div>
               <label className="block text-sm font-black text-gray-900 mb-2">
                 Passenger Name <span className="text-red-500">*</span>
@@ -242,7 +239,7 @@ const BookingPage = () => {
               />
             </div>
 
-            {/* Email */}
+            
             <div>
               <label className="block text-sm font-black text-gray-900 mb-2">
                 Email Address <span className="text-red-500">*</span>
@@ -261,7 +258,7 @@ const BookingPage = () => {
               </p>
             </div>
 
-            {/* Seat Preference */}
+          
             <div>
               <label className="block text-sm font-black text-gray-900 mb-2">Seat Preference</label>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -282,7 +279,7 @@ const BookingPage = () => {
               </div>
             </div>
 
-            {/* Price Summary */}
+            
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-gray-700">Total Amount</span>
@@ -295,7 +292,7 @@ const BookingPage = () => {
               </p>
             </div>
 
-            {/* Reserve Button */}
+            
             <button
               onClick={handleReserveBooking}
               disabled={submitting || !!bookingSuccess}

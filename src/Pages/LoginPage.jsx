@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../API/axiosInstance'; 
-import toast from 'react-hot-toast'; // Import toast
+import toast from 'react-hot-toast'; 
 
 const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -16,7 +16,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate Gmail format before sending to server
+    
     if (!formData.email.toLowerCase().endsWith('@gmail.com')) {
       toast.error("Only @gmail.com addresses are allowed.");
       return;
@@ -37,7 +37,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
         toast.success("Account created! Please sign in.");
         setIsRegistering(false);
       } else {
-        // SUCCESS: Credentials matched
+        
         const finalName = data.user?.name || formData.email.split('@')[0];
         
         localStorage.setItem('userToken', data.token);
@@ -49,7 +49,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
         navigate('/'); 
       }
     } catch (err) {
-      // FAILURE: Username or password did not match
+      
       const errMsg = err.response?.data?.message || "Incorrect email or password";
       toast.error(errMsg);
     } finally {

@@ -222,7 +222,7 @@ const PaymentPage = () => {
 
   const flightPrice = booking.flight?.price || 0;
 
-  // Inline SVG icons avoid the "Icon defined but never used" ESLint error
+  
   const paymentTabs = [
     {
       key: 'card', label: 'Card',
@@ -286,10 +286,8 @@ const PaymentPage = () => {
           </div>
         )}
 
-        {/* Two-col on lg+, single col on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
-          {/* LEFT: PAYMENT FORM */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
               <Lock className="text-blue-600" size={24} /> Choose Payment Method
@@ -302,7 +300,6 @@ const PaymentPage = () => {
               </div>
             )}
 
-            {/* Method tabs */}
             <div className="grid grid-cols-3 gap-2 mb-6">
               {paymentTabs.map(({ key, label, icon }) => (
                 <button
@@ -320,7 +317,6 @@ const PaymentPage = () => {
               ))}
             </div>
 
-            {/* CARD FORM */}
             {paymentMethod === 'card' && (
               <div className="space-y-4">
                 <div>
@@ -374,7 +370,6 @@ const PaymentPage = () => {
               </div>
             )}
 
-            {/* UPI FORM */}
             {paymentMethod === 'upi' && (
               <div className="space-y-4">
                 <div>
@@ -394,7 +389,6 @@ const PaymentPage = () => {
               </div>
             )}
 
-            {/* BANK FORM */}
             {paymentMethod === 'bank' && (
               <div className="space-y-4">
                 <div>
@@ -443,7 +437,6 @@ const PaymentPage = () => {
             )}
           </div>
 
-          {/* RIGHT: ORDER SUMMARY */}
           <div className="space-y-5 sm:space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
               <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-5 sm:mb-6 flex items-center gap-2">

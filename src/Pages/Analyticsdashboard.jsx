@@ -42,7 +42,7 @@ const AnalyticsDashboard = () => {
     fetchAll();
   }, [navigate]);
 
-  /* ── Derived metrics ── */
+ 
   const total     = bookings.length;
   const paid      = bookings.filter(b => b.paymentStatus === 'Completed').length;
   const cancelled = bookings.filter(b => b.paymentStatus === 'Cancelled').length;
@@ -54,7 +54,7 @@ const AnalyticsDashboard = () => {
 
   const cancellationRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
 
-  /* ── Popular routes ── */
+  
   const routeMap = {};
   bookings.forEach(b => {
     if (b.flight?.departureLocation && b.flight?.arrivalLocation) {
@@ -64,7 +64,7 @@ const AnalyticsDashboard = () => {
   });
   const popularRoutes = Object.entries(routeMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  /* ── Bookings per day (last 7 days) ── */
+
   const today = new Date();
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
@@ -84,7 +84,7 @@ const AnalyticsDashboard = () => {
 
   const maxDay = Math.max(...bookingsPerDay.map(d => d.count), 1);
 
-  /* ── Activity action breakdown ── */
+
   const actionMap = {};
   activityLogs.forEach(l => {
     const key = l.action || 'Unknown';
@@ -92,7 +92,7 @@ const AnalyticsDashboard = () => {
   });
   const actionBreakdown = Object.entries(actionMap).sort((a, b) => b[1] - a[1]);
 
-  /* ── Airline breakdown ── */
+  
   const airlineMap = {};
   bookings.forEach(b => {
     const key = b.flight?.airline || 'Unknown';
@@ -114,7 +114,6 @@ const AnalyticsDashboard = () => {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
-      {/* Back button */}
       <div className="mb-5 sm:mb-6">
         <button
           onClick={() => navigate('/')}
@@ -129,7 +128,6 @@ const AnalyticsDashboard = () => {
         <p className="text-slate-500 font-medium mt-1 text-sm sm:text-base">Booking trends, revenue, and activity insights.</p>
       </div>
 
-      {/* Stat cards — 2 col on mobile, 3 on sm, 6 on lg */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard
           icon={<BarChart3 size={18} />}
@@ -169,10 +167,8 @@ const AnalyticsDashboard = () => {
         />
       </div>
 
-      {/* Charts row — 1 col on mobile, 2 on lg */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 
-        {/* Bookings per Day Bar Chart */}
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
           <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Bookings — Last 7 Days</h2>
           <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Daily booking volume</p>
@@ -209,7 +205,6 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        {/* Booking Status */}
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
           <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Booking Status</h2>
           <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Distribution of all booking statuses</p>
@@ -256,7 +251,6 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      {/* Popular Routes + Airline Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
@@ -326,7 +320,6 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      {/* Activity Log Summary */}
       {activityLogs.length > 0 && (
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6 mb-4 sm:mb-6">
           <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Activity Log Summary</h2>
@@ -347,7 +340,7 @@ const AnalyticsDashboard = () => {
         </div>
       )}
 
-      {/* Revenue Summary */}
+
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -384,7 +377,7 @@ const AnalyticsDashboard = () => {
   );
 };
 
-/* ── Sub-components ── */
+
 
 const StatCard = ({ icon, color, label, value }) => (
   <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm">

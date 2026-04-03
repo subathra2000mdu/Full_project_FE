@@ -34,7 +34,6 @@ const Header = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
             </Link>
           </div>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center space-x-6 font-bold text-gray-500 text-sm">
             <Link to="/" className="hover:text-blue-600 transition">Home</Link>
             <Link to="/admin/history" className="hover:text-blue-600 transition">History</Link>
@@ -62,7 +61,6 @@ const Header = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
             )}
           </nav>
 
-          {/* Mobile: user greeting + hamburger */}
           <div className="flex md:hidden items-center gap-2">
             {isAuthenticated && (
               <span className="text-xs font-black text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase tracking-widest">
@@ -80,7 +78,6 @@ const Header = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col space-y-1">
