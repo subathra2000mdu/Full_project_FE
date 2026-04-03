@@ -124,7 +124,7 @@ const AdminHistory = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-20 space-y-4">
         <Loader2 className="animate-spin text-blue-600" size={40} />
         <p className="font-bold text-slate-600">Loading History...</p>
       </div>
@@ -132,201 +132,203 @@ const AdminHistory = () => {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    <div className="w-full min-h-screen bg-slate-50 mx-auto px-4 py-6 sm:py-8">
 
-      {/* Back button */}
-      <div className="mb-6 sm:mb-8">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition font-bold text-sm bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm"
-        >
-          <ArrowLeft size={16} /> Back to Search
-        </button>
-      </div>
+      <div className="max-w-6xl mx-auto">
+        {/* Back button */}
+        <div className="mb-6 sm:mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition font-bold text-sm bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm"
+          >
+            <ArrowLeft size={16} /> Back to Search
+          </button>
+        </div>
 
-      {/* Main card */}
-      <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-5 sm:p-8 md:p-10">
+        {/* Main card */}
+        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-5 sm:p-8 md:p-10">
 
-        <header className="mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1 tracking-tight">Booking History</h2>
-          <p className="text-slate-500 font-medium text-sm sm:text-base mb-5 sm:mb-6">
-            Review and manage all transaction and activity logs.
-          </p>
+          <header className="mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1 tracking-tight">Booking History</h2>
+            <p className="text-slate-500 font-medium text-sm sm:text-base mb-5 sm:mb-6">
+              Review and manage all transaction and activity logs.
+            </p>
 
-          {/* Tabs */}
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit overflow-x-auto">
-            {[
-              { key: 'bookings', label: 'All Bookings',  count: bookings.length,     badgeColor: 'bg-blue-100 text-blue-600' },
-              { key: 'activity', label: 'Activity Logs', count: activityLogs.length, badgeColor: 'bg-purple-100 text-purple-600' },
-            ].map(({ key, label, count, badgeColor }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
-                  activeTab === key
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {label}
-                <span className={`ml-2 text-xs font-black px-2 py-0.5 rounded-full ${badgeColor}`}>
-                  {count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </header>
+            {/* Tabs */}
+            <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit overflow-x-auto">
+              {[
+                { key: 'bookings', label: 'All Bookings',   count: bookings.length,     badgeColor: 'bg-blue-100 text-blue-600' },
+                { key: 'activity', label: 'Activity Logs', count: activityLogs.length, badgeColor: 'bg-purple-100 text-purple-600' },
+              ].map(({ key, label, count, badgeColor }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
+                    activeTab === key
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {label}
+                  <span className={`ml-2 text-xs font-black px-2 py-0.5 rounded-full ${badgeColor}`}>
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </header>
 
-        {/* ALL BOOKINGS TAB */}
-        {activeTab === 'bookings' && (
-          <div className="space-y-4">
-            {bookings.length === 0 ? (
-              <EmptyState message="No bookings found." sub="Completed bookings will appear here." />
-            ) : (
-              bookings.map((log) => {
-                const isCancelled      = log.paymentStatus === 'Cancelled';
-                const isPending        = log.paymentStatus !== 'Completed' && log.paymentStatus !== 'Cancelled';
-                const canCancel        = !isCancelled && log.paymentStatus === 'Completed';
-                const isThisCancelling = cancellingId === log._id;
+          {/* ALL BOOKINGS TAB */}
+          {activeTab === 'bookings' && (
+            <div className="space-y-4">
+              {bookings.length === 0 ? (
+                <EmptyState message="No bookings found." sub="Completed bookings will appear here." />
+              ) : (
+                bookings.map((log) => {
+                  const isCancelled      = log.paymentStatus === 'Cancelled';
+                  const isPending        = log.paymentStatus !== 'Completed' && log.paymentStatus !== 'Cancelled';
+                  const canCancel        = !isCancelled && log.paymentStatus === 'Completed';
+                  const isThisCancelling = cancellingId === log._id;
 
-                return (
-                  <div
-                    key={log._id}
-                    className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 gap-4"
-                  >
-                    {/* Top row: icon + info */}
-                    <div className="flex items-start space-x-4">
-                      <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0">
-                        <Calendar size={20} />
+                  return (
+                    <div
+                      key={log._id}
+                      className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 gap-4"
+                    >
+                      {/* Top row: icon + info */}
+                      <div className="flex items-start space-x-4">
+                        <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0">
+                          <Calendar size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-black text-slate-900 text-base">
+                            {log.bookingReference || `#${log._id?.slice(-6).toUpperCase()}`}
+                          </h4>
+                          {log.passengerDetails?.name && (
+                            <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
+                              <User size={11} /> {log.passengerDetails.name}
+                            </p>
+                          )}
+                          {log.passengerDetails?.email && (
+                            <p className="text-xs font-semibold text-slate-400 mt-0.5 break-all">
+                              {log.passengerDetails.email}
+                            </p>
+                          )}
+                          {log.flight && (
+                            <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                              {log.flight.airline}
+                              {log.flight.departureLocation && log.flight.arrivalLocation
+                                ? ` · ${log.flight.departureLocation} → ${log.flight.arrivalLocation}`
+                                : ''}
+                            </p>
+                          )}
+                          <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            {fmt(log.createdAt || log.timestamp)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-black text-slate-900 text-base">
-                          {log.bookingReference || `#${log._id?.slice(-6).toUpperCase()}`}
-                        </h4>
-                        {log.passengerDetails?.name && (
-                          <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
-                            <User size={11} /> {log.passengerDetails.name}
-                          </p>
-                        )}
-                        {log.passengerDetails?.email && (
-                          <p className="text-xs font-semibold text-slate-400 mt-0.5 break-all">
-                            {log.passengerDetails.email}
-                          </p>
-                        )}
-                        {log.flight && (
-                          <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                            {log.flight.airline}
-                            {log.flight.departureLocation && log.flight.arrivalLocation
-                              ? ` · ${log.flight.departureLocation} → ${log.flight.arrivalLocation}`
-                              : ''}
-                          </p>
-                        )}
-                        <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                          {fmt(log.createdAt || log.timestamp)}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Bottom row: price + status + actions */}
-                    <div className="flex items-center justify-between flex-wrap gap-2 pl-0 sm:pl-16">
-                      {log.flight?.price && (
-                        <span className="text-base font-black text-slate-800">
-                          ₹{log.flight.price.toLocaleString('en-IN')}
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <StatusBadge status={log.paymentStatus} />
-
-                        {canCancel && (
-                          <button
-                            onClick={() => handleCancelBooking(log._id)}
-                            disabled={isThisCancelling}
-                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl sm:rounded-2xl text-xs font-black hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
-                          >
-                            {isThisCancelling
-                              ? <Loader2 size={12} className="animate-spin" />
-                              : <X size={12} />
-                            }
-                            {isThisCancelling ? 'Cancelling...' : 'Cancel'}
-                          </button>
-                        )}
-
-                        {isPending && (
-                          <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl sm:rounded-2xl">
-                            Payment Pending
+                      {/* Bottom row: price + status + actions */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 pl-0 sm:pl-16">
+                        {log.flight?.price && (
+                          <span className="text-base font-black text-slate-800">
+                            ₹{log.flight.price.toLocaleString('en-IN')}
                           </span>
                         )}
 
-                        <button
-                          onClick={() => handleDownloadReceipt(log._id)}
-                          className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-3 bg-slate-900 text-white rounded-xl sm:rounded-2xl text-xs font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
-                        >
-                          <Download size={13} />
-                          <span>Receipt</span>
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <StatusBadge status={log.paymentStatus} />
+
+                          {canCancel && (
+                            <button
+                              onClick={() => handleCancelBooking(log._id)}
+                              disabled={isThisCancelling}
+                              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl sm:rounded-2xl text-xs font-black hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                            >
+                              {isThisCancelling
+                                ? <Loader2 size={12} className="animate-spin" />
+                                : <X size={12} />
+                              }
+                              {isThisCancelling ? 'Cancelling...' : 'Cancel'}
+                            </button>
+                          )}
+
+                          {isPending && (
+                            <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl sm:rounded-2xl">
+                              Payment Pending
+                            </span>
+                          )}
+
+                          <button
+                            onClick={() => handleDownloadReceipt(log._id)}
+                            className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-3 bg-slate-900 text-white rounded-xl sm:rounded-2xl text-xs font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                          >
+                            <Download size={13} />
+                            <span>Receipt</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
+                  );
+                })
+              )}
+            </div>
+          )}
 
-        {/* ACTIVITY LOGS TAB */}
-        {activeTab === 'activity' && (
-          <div className="space-y-4">
-            {activityLogs.length === 0 ? (
-              <EmptyState message="No activity logs found." sub="New activity will appear here automatically." />
-            ) : (
-              activityLogs.map((log, idx) => (
-                <div
-                  key={log._id || idx}
-                  className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 gap-3"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shrink-0">
-                      <Clock size={20} />
+          {/* ACTIVITY LOGS TAB */}
+          {activeTab === 'activity' && (
+            <div className="space-y-4">
+              {activityLogs.length === 0 ? (
+                <EmptyState message="No activity logs found." sub="New activity will appear here automatically." />
+              ) : (
+                activityLogs.map((log, idx) => (
+                  <div
+                    key={log._id || idx}
+                    className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 gap-3"
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shrink-0">
+                        <Clock size={20} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-slate-900 text-base capitalize">
+                          {log.action || 'Action'}
+                        </h4>
+                        {log.userId?.name && (
+                          <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
+                            <User size={11} /> {log.userId.name}
+                            {log.userId.email ? ` · ${log.userId.email}` : ''}
+                          </p>
+                        )}
+                        {log.details && (
+                          <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                            {[
+                              log.details.passengerName && `Passenger: ${log.details.passengerName}`,
+                              log.details.flightNumber  && `Flight: ${log.details.flightNumber}`,
+                              log.details.status        && `Status: ${log.details.status}`,
+                            ].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                        <p className="text-xs font-bold text-slate-400 mt-0.5">
+                          Booking: #{log.bookingId?.toString().slice(-6).toUpperCase() || 'N/A'}
+                        </p>
+                        <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                          {fmt(log.timestamp)}
+                          {fmtTime(log.timestamp) ? ` · ${fmtTime(log.timestamp)}` : ''}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-slate-900 text-base capitalize">
-                        {log.action || 'Action'}
-                      </h4>
-                      {log.userId?.name && (
-                        <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
-                          <User size={11} /> {log.userId.name}
-                          {log.userId.email ? ` · ${log.userId.email}` : ''}
-                        </p>
-                      )}
-                      {log.details && (
-                        <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                          {[
-                            log.details.passengerName && `Passenger: ${log.details.passengerName}`,
-                            log.details.flightNumber  && `Flight: ${log.details.flightNumber}`,
-                            log.details.status        && `Status: ${log.details.status}`,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                      <p className="text-xs font-bold text-slate-400 mt-0.5">
-                        Booking: #{log.bookingId?.toString().slice(-6).toUpperCase() || 'N/A'}
-                      </p>
-                      <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                        {fmt(log.timestamp)}
-                        {fmtTime(log.timestamp) ? ` · ${fmtTime(log.timestamp)}` : ''}
-                      </p>
+                    <div className="flex justify-end pl-0 sm:pl-16">
+                      <ActionBadge action={log.action} />
                     </div>
                   </div>
-                  <div className="flex justify-end pl-0 sm:pl-16">
-                    <ActionBadge action={log.action} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

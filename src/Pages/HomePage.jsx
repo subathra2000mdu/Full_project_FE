@@ -171,7 +171,7 @@ const HomePage = () => {
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 py-10 sm:py-14 mb-6 sm:mb-8">
         <div className="w-full max-w-6xl mx-auto px-4">
           <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">Enjoy Your Journey</h1>
+            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">Happy Journey</h1>
             <p className="text-blue-200 font-medium text-sm sm:text-base">Search flights across India</p>
           </div>
 
