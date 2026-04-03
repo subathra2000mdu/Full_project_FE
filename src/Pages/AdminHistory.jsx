@@ -55,7 +55,7 @@ const AdminHistory = () => {
 
         if (activityRes.status === 'fulfilled') {
           const d = activityRes.value.data;
-          if (Array.isArray(d))           setActivityLogs(d);
+          if (Array.isArray(d))             setActivityLogs(d);
           else if (Array.isArray(d?.logs))  setActivityLogs(d.logs);
           else if (Array.isArray(d?.data))  setActivityLogs(d.data);
           else                              setActivityLogs([]);
@@ -74,7 +74,6 @@ const AdminHistory = () => {
     fetchAll();
   }, [isAuthenticated, navigate]);
 
-  // ── Download PDF receipt ──
   const handleDownloadReceipt = async (bookingId) => {
     try {
       const response = await axios.get(`/bookings/download/${bookingId}`, {
@@ -95,22 +94,17 @@ const AdminHistory = () => {
     }
   };
 
-  // ── Cancel booking from history ──
   const handleCancelBooking = async (bookingId) => {
     const confirmed = window.confirm(
       'Cancel this booking?\n\nThis action cannot be undone. Any applicable refund will be processed per our cancellation policy.'
     );
     if (!confirmed) return;
-
     setCancellingId(bookingId);
     try {
       await axios.patch(`/bookings/update/${bookingId}`, { paymentStatus: 'Cancelled' });
       toast.success('Booking cancelled successfully.');
-      // Update the booking in local state so UI reflects immediately
       setBookings(prev =>
-        prev.map(b =>
-          b._id === bookingId ? { ...b, paymentStatus: 'Cancelled' } : b
-        )
+        prev.map(b => b._id === bookingId ? { ...b, paymentStatus: 'Cancelled' } : b)
       );
     } catch (err) {
       toast.error(err.response?.data?.message || 'Cancellation failed. Please try again.');
@@ -119,7 +113,6 @@ const AdminHistory = () => {
     }
   };
 
-  /* ── helpers ── */
   const fmt = (d) => {
     if (!d) return 'N/A';
     return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -139,10 +132,10 @@ const AdminHistory = () => {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-8">
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
       {/* Back button */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition font-bold text-sm bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm"
@@ -151,15 +144,17 @@ const AdminHistory = () => {
         </button>
       </div>
 
-      {/* Single full card */}
-      <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-6 md:p-10">
+      {/* Main card */}
+      <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-5 sm:p-8 md:p-10">
 
-        <header className="mb-8">
-          <h2 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">Booking History</h2>
-          <p className="text-slate-500 font-medium mb-6">Review and manage all transaction and activity logs.</p>
+        <header className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1 tracking-tight">Booking History</h2>
+          <p className="text-slate-500 font-medium text-sm sm:text-base mb-5 sm:mb-6">
+            Review and manage all transaction and activity logs.
+          </p>
 
           {/* Tabs */}
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit overflow-x-auto">
             {[
               { key: 'bookings', label: 'All Bookings',  count: bookings.length,     badgeColor: 'bg-blue-100 text-blue-600' },
               { key: 'activity', label: 'Activity Logs', count: activityLogs.length, badgeColor: 'bg-purple-100 text-purple-600' },
@@ -167,7 +162,7 @@ const AdminHistory = () => {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${
+                className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
                   activeTab === key
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
@@ -186,43 +181,38 @@ const AdminHistory = () => {
         {activeTab === 'bookings' && (
           <div className="space-y-4">
             {bookings.length === 0 ? (
-              <EmptyState
-                message="No bookings found."
-                sub="Completed bookings will appear here."
-              />
+              <EmptyState message="No bookings found." sub="Completed bookings will appear here." />
             ) : (
               bookings.map((log) => {
-                const isCancelled = log.paymentStatus === 'Cancelled';
-                const isPending   = log.paymentStatus !== 'Completed' && log.paymentStatus !== 'Cancelled';
-                const canCancel   = !isCancelled && log.paymentStatus === 'Completed';
+                const isCancelled      = log.paymentStatus === 'Cancelled';
+                const isPending        = log.paymentStatus !== 'Completed' && log.paymentStatus !== 'Cancelled';
+                const canCancel        = !isCancelled && log.paymentStatus === 'Completed';
                 const isThisCancelling = cancellingId === log._id;
 
                 return (
                   <div
                     key={log._id}
-                    className="group flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-100 rounded-3xl hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 gap-4"
+                    className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 gap-4"
                   >
-                    <div className="flex items-center space-x-5">
-                      <div className="p-4 bg-slate-50 rounded-2xl text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                        <Calendar size={22} />
+                    {/* Top row: icon + info */}
+                    <div className="flex items-start space-x-4">
+                      <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0">
+                        <Calendar size={20} />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-black text-slate-900 text-base">
                           {log.bookingReference || `#${log._id?.slice(-6).toUpperCase()}`}
                         </h4>
-
                         {log.passengerDetails?.name && (
                           <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
                             <User size={11} /> {log.passengerDetails.name}
                           </p>
                         )}
-
                         {log.passengerDetails?.email && (
-                          <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                          <p className="text-xs font-semibold text-slate-400 mt-0.5 break-all">
                             {log.passengerDetails.email}
                           </p>
                         )}
-
                         {log.flight && (
                           <p className="text-xs font-semibold text-slate-400 mt-0.5">
                             {log.flight.airline}
@@ -231,7 +221,6 @@ const AdminHistory = () => {
                               : ''}
                           </p>
                         )}
-
                         <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                           {fmt(log.createdAt || log.timestamp)}
@@ -239,44 +228,45 @@ const AdminHistory = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 flex-wrap">
+                    {/* Bottom row: price + status + actions */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 pl-0 sm:pl-16">
                       {log.flight?.price && (
                         <span className="text-base font-black text-slate-800">
                           ₹{log.flight.price.toLocaleString('en-IN')}
                         </span>
                       )}
 
-                      <StatusBadge status={log.paymentStatus} />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <StatusBadge status={log.paymentStatus} />
 
-                      {/* Cancel button — only shown for Completed bookings */}
-                      {canCancel && (
+                        {canCancel && (
+                          <button
+                            onClick={() => handleCancelBooking(log._id)}
+                            disabled={isThisCancelling}
+                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl sm:rounded-2xl text-xs font-black hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            {isThisCancelling
+                              ? <Loader2 size={12} className="animate-spin" />
+                              : <X size={12} />
+                            }
+                            {isThisCancelling ? 'Cancelling...' : 'Cancel'}
+                          </button>
+                        )}
+
+                        {isPending && (
+                          <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl sm:rounded-2xl">
+                            Payment Pending
+                          </span>
+                        )}
+
                         <button
-                          onClick={() => handleCancelBooking(log._id)}
-                          disabled={isThisCancelling}
-                          className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl text-xs font-black hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                          onClick={() => handleDownloadReceipt(log._id)}
+                          className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-3 bg-slate-900 text-white rounded-xl sm:rounded-2xl text-xs font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
                         >
-                          {isThisCancelling
-                            ? <Loader2 size={12} className="animate-spin" />
-                            : <X size={12} />
-                          }
-                          {isThisCancelling ? 'Cancelling...' : 'Cancel'}
+                          <Download size={13} />
+                          <span>Receipt</span>
                         </button>
-                      )}
-
-                      {/* Pending booking info */}
-                      {isPending && (
-                        <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-2xl">
-                          Payment Pending
-                        </span>
-                      )}
-
-                      <button
-                        onClick={() => handleDownloadReceipt(log._id)}
-                        className="flex items-center space-x-2 px-5 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
-                      >
-                        <Download size={13} />
-                        <span className="hidden sm:inline">Receipt</span>
-                      </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -289,48 +279,39 @@ const AdminHistory = () => {
         {activeTab === 'activity' && (
           <div className="space-y-4">
             {activityLogs.length === 0 ? (
-              <EmptyState
-                message="No activity logs found."
-                sub="New activity will appear here automatically."
-              />
+              <EmptyState message="No activity logs found." sub="New activity will appear here automatically." />
             ) : (
               activityLogs.map((log, idx) => (
                 <div
                   key={log._id || idx}
-                  className="group flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-100 rounded-3xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 gap-4"
+                  className="group flex flex-col p-4 sm:p-6 border border-slate-100 rounded-2xl sm:rounded-3xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 gap-3"
                 >
-                  <div className="flex items-center space-x-5">
-                    <div className="p-4 bg-slate-50 rounded-2xl text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-                      <Clock size={22} />
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shrink-0">
+                      <Clock size={20} />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h4 className="font-black text-slate-900 text-base capitalize">
                         {log.action || 'Action'}
                       </h4>
-
                       {log.userId?.name && (
                         <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
                           <User size={11} /> {log.userId.name}
                           {log.userId.email ? ` · ${log.userId.email}` : ''}
                         </p>
                       )}
-
                       {log.details && (
                         <p className="text-xs font-semibold text-slate-400 mt-0.5">
                           {[
                             log.details.passengerName && `Passenger: ${log.details.passengerName}`,
                             log.details.flightNumber  && `Flight: ${log.details.flightNumber}`,
                             log.details.status        && `Status: ${log.details.status}`,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
+                          ].filter(Boolean).join(' · ')}
                         </p>
                       )}
-
                       <p className="text-xs font-bold text-slate-400 mt-0.5">
                         Booking: #{log.bookingId?.toString().slice(-6).toUpperCase() || 'N/A'}
                       </p>
-
                       <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                         {fmt(log.timestamp)}
@@ -338,8 +319,7 @@ const AdminHistory = () => {
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-end">
+                  <div className="flex justify-end pl-0 sm:pl-16">
                     <ActionBadge action={log.action} />
                   </div>
                 </div>
@@ -352,12 +332,12 @@ const AdminHistory = () => {
   );
 };
 
-/* Sub-components */
+/* ── Sub-components ── */
 
 const StatusBadge = ({ status }) => {
   if (status === 'Completed') {
     return (
-      <div className="flex items-center gap-2 bg-green-50 text-green-600 px-4 py-2 rounded-2xl border border-green-100">
+      <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-green-100">
         <CheckCircle size={13} className="fill-green-600 text-white" />
         <span className="text-xs font-black uppercase tracking-tight">Paid</span>
       </div>
@@ -365,14 +345,14 @@ const StatusBadge = ({ status }) => {
   }
   if (status === 'Cancelled') {
     return (
-      <div className="flex items-center gap-2 bg-red-50 text-red-500 px-4 py-2 rounded-2xl border border-red-100">
+      <div className="flex items-center gap-1.5 bg-red-50 text-red-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-red-100">
         <XCircle size={13} className="fill-red-500 text-white" />
         <span className="text-xs font-black uppercase tracking-tight">Cancelled</span>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-2 bg-amber-50 text-amber-600 px-4 py-2 rounded-2xl border border-amber-100">
+    <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-amber-100">
       <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
       <span className="text-xs font-black uppercase tracking-tight">{status || 'Pending'}</span>
     </div>
@@ -389,14 +369,14 @@ const ACTION_STYLES = {
 const ActionBadge = ({ action }) => {
   const style = ACTION_STYLES[action] || 'bg-slate-50 text-slate-600 border-slate-100';
   return (
-    <span className={`px-4 py-2 rounded-2xl border text-xs font-black uppercase tracking-tight ${style}`}>
+    <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border text-xs font-black uppercase tracking-tight ${style}`}>
       {action || 'Action'}
     </span>
   );
 };
 
 const EmptyState = ({ message, sub }) => (
-  <div className="p-20 text-center border-2 border-dashed border-slate-100 rounded-[2rem] text-slate-400 bg-slate-50/50">
+  <div className="p-10 sm:p-20 text-center border-2 border-dashed border-slate-100 rounded-2xl sm:rounded-[2rem] text-slate-400 bg-slate-50/50">
     <Calendar className="mx-auto mb-4 opacity-20" size={48} />
     <p className="font-bold text-lg">{message}</p>
     <p className="text-sm">{sub}</p>

@@ -20,14 +20,14 @@ const PaymentPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('card');
 
   const [formData, setFormData] = useState({
-    cardholderName: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    upiId: '',
-    bankName: '',
-    accountNumber: '',
-    ifscCode: '',
+    cardholderName:    '',
+    cardNumber:        '',
+    expiryDate:        '',
+    cvv:               '',
+    upiId:             '',
+    bankName:          '',
+    accountNumber:     '',
+    ifscCode:          '',
     accountHolderName: ''
   });
 
@@ -100,13 +100,13 @@ const PaymentPage = () => {
     try {
       const response = await API.get(`/bookings/download/${bId}`, {
         responseType: 'blob',
-        headers: { 'Accept': 'application/pdf, */*' }
+        headers: { Accept: 'application/pdf, */*' }
       });
       const blob      = new Blob([response.data], { type: 'application/pdf' });
       const objectUrl = window.URL.createObjectURL(blob);
       const link      = document.createElement('a');
-      link.href       = objectUrl;
-      link.download   = `booking-receipt-${bId}.pdf`;
+      link.href        = objectUrl;
+      link.download    = `booking-receipt-${bId}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -121,16 +121,11 @@ const PaymentPage = () => {
   const processPayment = async () => {
     setError('');
     setSuccess('');
-
     const valid =
       paymentMethod === 'card' ? validateCard() :
       paymentMethod === 'upi'  ? validateUPI()  : validateBank();
     if (!valid) return;
-
-    if (!booking?._id) {
-      setError('Booking ID is missing. Please go back and try again.');
-      return;
-    }
+    if (!booking?._id) { setError('Booking ID is missing. Please go back and try again.'); return; }
 
     setProcessing(true);
     try {
@@ -164,7 +159,6 @@ const PaymentPage = () => {
       if (confirmRes.data?.message) {
         setSuccess(confirmRes.data.message);
         toast.success('Payment confirmed! Booking confirmation email sent.');
-
         const updatedBooking = { ...booking, paymentStatus: 'Completed' };
         localStorage.setItem('currentBooking', JSON.stringify(updatedBooking));
         localStorage.setItem('paymentInfo', JSON.stringify({
@@ -174,7 +168,6 @@ const PaymentPage = () => {
           timestamp: new Date().toISOString(),
           reference: intentRes.data.clientSecret,
         }));
-
         await downloadBookingPDF(booking._id);
         setTimeout(() => navigate('/'), 2500);
       } else {
@@ -204,15 +197,21 @@ const PaymentPage = () => {
   if (!booking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-blue-600 font-semibold mb-6 hover:text-blue-700">
+        <div className="w-full max-w-4xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-blue-600 font-semibold mb-6 hover:text-blue-700"
+          >
             <ArrowLeft size={18} /> Back to Home
           </button>
           <div className="bg-white rounded-2xl border border-red-200 p-8 text-center">
             <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
             <h2 className="text-xl font-black text-gray-900 mb-2">Booking Not Found</h2>
             <p className="text-gray-600 mb-6">Please complete the booking process first.</p>
-            <button onClick={() => navigate('/')} className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-lg transition">
+            <button
+              onClick={() => navigate('/')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-lg transition"
+            >
               Return to Home
             </button>
           </div>
@@ -223,50 +222,50 @@ const PaymentPage = () => {
 
   const flightPrice = booking.flight?.price || 0;
 
-  /* ── Payment method tab definitions ──
-     FIX: Removed IconComponent from the array — used direct JSX instead
-     to avoid the ESLint "defined but never used" false positive that occurs
-     when a component reference is passed through an array and rendered as
-     <IconComponent /> (the linter sees the binding but not the JSX usage). */
+  // Inline SVG icons avoid the "Icon defined but never used" ESLint error
   const paymentTabs = [
     {
-      key: 'card',
-      label: 'Card',
+      key: 'card', label: 'Card',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+          <line x1="1" y1="10" x2="23" y2="10"/>
         </svg>
       ),
     },
     {
-      key: 'upi',
-      label: 'UPI',
+      key: 'upi', label: 'UPI',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+          <path d="M20 12V22H4V12"/>
+          <path d="M22 7H2v5h20V7z"/>
+          <path d="M12 22V7"/>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
           <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
         </svg>
       ),
     },
     {
-      key: 'bank',
-      label: 'Bank',
+      key: 'bank', label: 'Bank',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/>
-          <line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/>
-          <line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/>
+          <line x1="3" y1="22" x2="21" y2="22"/>
+          <line x1="6" y1="18" x2="6" y2="11"/>
+          <line x1="10" y1="18" x2="10" y2="11"/>
+          <line x1="14" y1="18" x2="14" y2="11"/>
+          <line x1="18" y1="18" x2="18" y2="11"/>
+          <polygon points="12 2 20 7 4 7"/>
         </svg>
       ),
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 sm:py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-6 sm:py-10 px-4">
+      <div className="w-full max-w-6xl mx-auto">
 
         <button
           onClick={() => navigate('/booking/' + booking.flight?._id)}
@@ -287,22 +286,23 @@ const PaymentPage = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Two-col on lg+, single col on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
           {/* LEFT: PAYMENT FORM */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
               <Lock className="text-blue-600" size={24} /> Choose Payment Method
             </h2>
 
             {error && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex gap-3">
+              <div className="mb-5 bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex gap-3">
                 <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
                 <p className="text-red-800 font-semibold text-sm">{error}</p>
               </div>
             )}
 
-            {/* Payment method tabs — icon rendered directly as JSX, no IconComponent variable */}
+            {/* Method tabs */}
             <div className="grid grid-cols-3 gap-2 mb-6">
               {paymentTabs.map(({ key, label, icon }) => (
                 <button
@@ -340,7 +340,7 @@ const PaymentPage = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">16-digit card number</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm font-black text-gray-900 mb-2">Expiry Date</label>
                     <input
@@ -444,33 +444,33 @@ const PaymentPage = () => {
           </div>
 
           {/* RIGHT: ORDER SUMMARY */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
-              <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+          <div className="space-y-5 sm:space-y-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-5 sm:mb-6 flex items-center gap-2">
                 <CheckCircle className="text-green-600" size={24} /> Booking Summary
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
                   ['Booking Reference', booking.bookingReference || booking._id?.slice(-8).toUpperCase()],
                   ['Passenger Name',    booking.passengerDetails?.name  || 'N/A'],
                   ['Email',             booking.passengerDetails?.email || 'N/A'],
                   ['Seat Preference',   booking.seatPreference          || 'N/A'],
-                  ...(booking.passengers ? [['Passengers', booking.passengers]] : []),
-                  ...(booking.bookingClass ? [['Class', booking.bookingClass]] : []),
+                  ...(booking.passengers  ? [['Passengers', booking.passengers]]    : []),
+                  ...(booking.bookingClass ? [['Class', booking.bookingClass]]       : []),
                   ...(booking.flight ? [
                     ['Flight', `${booking.flight.airline} (${booking.flight.flightNumber})`],
                     ['Route',  `${booking.flight.departureLocation} → ${booking.flight.arrivalLocation}`],
                   ] : []),
                 ].map(([label, val]) => (
-                  <div key={label} className="flex justify-between items-start pb-3 border-b border-gray-100">
-                    <span className="text-sm font-semibold text-gray-600">{label}</span>
-                    <span className="text-base font-black text-gray-900 text-right break-all">{val}</span>
+                  <div key={label} className="flex justify-between items-start pb-3 border-b border-gray-100 gap-2">
+                    <span className="text-sm font-semibold text-gray-600 shrink-0">{label}</span>
+                    <span className="text-sm font-black text-gray-900 text-right break-all">{val}</span>
                   </div>
                 ))}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-black text-gray-900">Total Amount</span>
-                    <span className="text-3xl font-black text-blue-600">
+                    <span className="text-base sm:text-lg font-black text-gray-900">Total Amount</span>
+                    <span className="text-2xl sm:text-3xl font-black text-blue-600">
                       ₹{flightPrice.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -479,11 +479,11 @@ const PaymentPage = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg border-2 border-green-200 p-6 sm:p-8">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg border-2 border-green-200 p-5 sm:p-8">
               <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-4 flex items-center gap-2">
                 <Lock className="text-green-600" size={24} /> Payment Confirmation
               </h3>
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 sm:space-y-3 mb-5 sm:mb-6">
                 {[
                   'Secure SSL encrypted connection',
                   'PCI DSS compliant payment processing',
@@ -492,8 +492,8 @@ const PaymentPage = () => {
                   'PDF receipt auto-downloaded after payment',
                   'Booking confirmation email sent instantly',
                 ].map(t => (
-                  <div key={t} className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-green-600 rounded-full flex-shrink-0" />
+                  <div key={t} className="flex items-start sm:items-center gap-2 text-sm">
+                    <div className="w-2 h-2 bg-green-600 rounded-full flex-shrink-0 mt-1 sm:mt-0" />
                     <span className="text-gray-700 font-semibold">{t}</span>
                   </div>
                 ))}

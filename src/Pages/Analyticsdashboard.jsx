@@ -7,15 +7,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   AnalyticsDashboard
-   Route suggestion: /analytics  (add to your App.jsx / router)
-   Shows: total bookings, revenue, cancellation rate, popular routes,
-          booking status breakdown, bookings-per-day bar chart.
-   All data derived from /bookings/my-history + /admin/history endpoints
-   which you already have — no new backend routes needed.
-───────────────────────────────────────────────────────────────────────────── */
-
 const AnalyticsDashboard = () => {
   const navigate = useNavigate();
 
@@ -34,35 +25,28 @@ const AnalyticsDashboard = () => {
           axios.get('/bookings/my-history'),
           axios.get('/admin/history'),
         ]);
-
         if (bookingRes.status === 'fulfilled') {
           const d = bookingRes.value.data;
           setBookings(Array.isArray(d) ? d : Array.isArray(d?.bookings) ? d.bookings : []);
-        } else {
-          setBookings([]);
-        }
-
+        } else { setBookings([]); }
         if (activityRes.status === 'fulfilled') {
           const d = activityRes.value.data;
           setActivityLogs(Array.isArray(d) ? d : Array.isArray(d?.logs) ? d.logs : []);
-        } else {
-          setActivityLogs([]);
-        }
+        } else { setActivityLogs([]); }
       } catch {
         toast.error('Could not load analytics data.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchAll();
   }, [navigate]);
 
   /* ── Derived metrics ── */
-  const total      = bookings.length;
-  const paid       = bookings.filter(b => b.paymentStatus === 'Completed').length;
-  const cancelled  = bookings.filter(b => b.paymentStatus === 'Cancelled').length;
-  const pending    = bookings.filter(b => b.paymentStatus !== 'Completed' && b.paymentStatus !== 'Cancelled').length;
+  const total     = bookings.length;
+  const paid      = bookings.filter(b => b.paymentStatus === 'Completed').length;
+  const cancelled = bookings.filter(b => b.paymentStatus === 'Cancelled').length;
+  const pending   = bookings.filter(b => b.paymentStatus !== 'Completed' && b.paymentStatus !== 'Cancelled').length;
 
   const totalRevenue = bookings
     .filter(b => b.paymentStatus === 'Completed')
@@ -78,16 +62,14 @@ const AnalyticsDashboard = () => {
       routeMap[key] = (routeMap[key] || 0) + 1;
     }
   });
-  const popularRoutes = Object.entries(routeMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const popularRoutes = Object.entries(routeMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   /* ── Bookings per day (last 7 days) ── */
   const today = new Date();
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
-    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' });
   });
 
   const bookingsPerDay = last7.map(dateStr => {
@@ -130,10 +112,10 @@ const AnalyticsDashboard = () => {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-8">
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
       {/* Back button */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition font-bold text-sm bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm"
@@ -142,13 +124,13 @@ const AnalyticsDashboard = () => {
         </button>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Analytics & Reports</h1>
-        <p className="text-slate-500 font-medium mt-1">Booking trends, revenue, and activity insights.</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Analytics &amp; Reports</h1>
+        <p className="text-slate-500 font-medium mt-1 text-sm sm:text-base">Booking trends, revenue, and activity insights.</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      {/* Stat cards — 2 col on mobile, 3 on sm, 6 on lg */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard
           icon={<BarChart3 size={18} />}
           color="text-blue-600 bg-blue-50"
@@ -187,36 +169,37 @@ const AnalyticsDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Charts row — 1 col on mobile, 2 on lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 
-        {/* Bookings per Day — Bar Chart */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-lg font-black text-slate-900 mb-1">Bookings — Last 7 Days</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-6">Daily booking volume</p>
+        {/* Bookings per Day Bar Chart */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Bookings — Last 7 Days</h2>
+          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Daily booking volume</p>
 
           {bookingsPerDay.every(d => d.count === 0) ? (
-            <div className="flex flex-col items-center justify-center h-40 text-slate-300">
+            <div className="flex flex-col items-center justify-center h-36 sm:h-40 text-slate-300">
               <BarChart3 size={40} className="mb-2 opacity-40" />
               <p className="text-sm font-semibold">No bookings in the last 7 days</p>
             </div>
           ) : (
-            <div className="flex items-end gap-2 h-44">
+            <div className="flex items-end gap-1.5 sm:gap-2 h-36 sm:h-44">
               {bookingsPerDay.map(({ date, count }) => {
                 const heightPct = Math.round((count / maxDay) * 100);
                 const label = new Date(date + 'T00:00:00')
                   .toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
                 return (
-                  <div key={date} className="flex flex-col items-center gap-1 flex-1">
+                  <div key={date} className="flex flex-col items-center gap-1 flex-1 min-w-0">
                     {count > 0 && (
                       <span className="text-xs font-black text-blue-600">{count}</span>
                     )}
-                    <div className="w-full rounded-t-lg bg-blue-100 flex items-end" style={{ height: '140px' }}>
+                    <div className="w-full rounded-t-lg bg-blue-100 flex items-end" style={{ height: '120px' }}>
                       <div
                         className="w-full rounded-t-lg bg-blue-600 transition-all duration-500"
                         style={{ height: `${heightPct}%`, minHeight: count > 0 ? '4px' : '0' }}
                       />
                     </div>
-                    <span className="text-xs font-bold text-slate-400 text-center leading-tight">
+                    <span className="text-xs font-bold text-slate-400 text-center leading-tight w-full truncate">
                       {label}
                     </span>
                   </div>
@@ -226,50 +209,44 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        {/* Booking Status Donut */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-lg font-black text-slate-900 mb-1">Booking Status</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-6">Distribution of all booking statuses</p>
+        {/* Booking Status */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Booking Status</h2>
+          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Distribution of all booking statuses</p>
 
           {total === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-slate-300">
+            <div className="flex flex-col items-center justify-center h-36 sm:h-40 text-slate-300">
               <Users size={40} className="mb-2 opacity-40" />
               <p className="text-sm font-semibold">No booking data yet</p>
             </div>
           ) : (
             <div className="space-y-3">
               {[
-                { label: 'Confirmed (Paid)', count: paid,      color: 'bg-green-500',  textColor: 'text-green-700' },
-                { label: 'Cancelled',        count: cancelled, color: 'bg-red-500',    textColor: 'text-red-700' },
-                { label: 'Pending Payment',  count: pending,   color: 'bg-amber-400',  textColor: 'text-amber-700' },
+                { label: 'Confirmed (Paid)', count: paid,      color: 'bg-green-500', textColor: 'text-green-700' },
+                { label: 'Cancelled',        count: cancelled, color: 'bg-red-500',   textColor: 'text-red-700' },
+                { label: 'Pending Payment',  count: pending,   color: 'bg-amber-400', textColor: 'text-amber-700' },
               ].map(({ label, count, color, textColor }) => {
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                 return (
                   <div key={label}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-bold text-slate-600">{label}</span>
-                      <span className={`text-sm font-black ${textColor}`}>
-                        {count} ({pct}%)
-                      </span>
+                      <span className={`text-sm font-black ${textColor}`}>{count} ({pct}%)</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full ${color} transition-all duration-700`}
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className={`h-3 rounded-full ${color} transition-all duration-700`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
               })}
-
-              <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-3">
+              <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 sm:gap-3">
                 {[
                   { label: 'Paid',      count: paid,      color: 'text-green-600' },
                   { label: 'Cancelled', count: cancelled, color: 'text-red-600' },
                   { label: 'Pending',   count: pending,   color: 'text-amber-600' },
                 ].map(({ label, count, color }) => (
                   <div key={label} className="text-center">
-                    <p className={`text-2xl font-black ${color}`}>{count}</p>
+                    <p className={`text-xl sm:text-2xl font-black ${color}`}>{count}</p>
                     <p className="text-xs font-semibold text-slate-400">{label}</p>
                   </div>
                 ))}
@@ -279,13 +256,12 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Popular Routes + Airline Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
 
-        {/* Popular Routes */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-lg font-black text-slate-900 mb-1">Popular Routes</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-6">Most booked flight routes</p>
-
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Popular Routes</h2>
+          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Most booked flight routes</p>
           {popularRoutes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-slate-300">
               <Plane size={36} className="mb-2 opacity-40" />
@@ -297,23 +273,20 @@ const AnalyticsDashboard = () => {
                 const maxRoute = popularRoutes[0][1];
                 const pct = Math.round((count / maxRoute) * 100);
                 return (
-                  <div key={route} className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-400 w-5 text-right">{idx + 1}</span>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
-                          <Plane size={12} className="text-blue-400" />
-                          {route}
+                  <div key={route} className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-xs font-black text-slate-400 w-4 text-right shrink-0 mt-1">{idx + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1 gap-2">
+                        <span className="text-sm font-bold text-slate-800 flex items-center gap-1 min-w-0 truncate">
+                          <Plane size={12} className="text-blue-400 shrink-0" />
+                          <span className="truncate">{route}</span>
                         </span>
-                        <span className="text-xs font-black text-blue-600">
+                        <span className="text-xs font-black text-blue-600 shrink-0">
                           {count} booking{count > 1 ? 's' : ''}
                         </span>
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div
-                          className="h-2 rounded-full bg-blue-500 transition-all duration-700"
-                          style={{ width: `${pct}%` }}
-                        />
+                        <div className="h-2 rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   </div>
@@ -323,11 +296,9 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        {/* Airline Breakdown */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-lg font-black text-slate-900 mb-1">Bookings by Airline</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-6">Which airlines are most booked</p>
-
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Bookings by Airline</h2>
+          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Which airlines are most booked</p>
           {airlineBreakdown.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-slate-300">
               <Plane size={36} className="mb-2 opacity-40" />
@@ -345,10 +316,7 @@ const AnalyticsDashboard = () => {
                       <span className="text-xs font-black text-purple-600">{count}</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full bg-purple-500 transition-all duration-700"
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className="h-2 rounded-full bg-purple-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -358,25 +326,20 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      {/* Activity Log Action Breakdown */}
+      {/* Activity Log Summary */}
       {activityLogs.length > 0 && (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-lg font-black text-slate-900 mb-1">Activity Log Summary</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-6">Breakdown of all user actions</p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Activity Log Summary</h2>
+          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Breakdown of all user actions</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {actionBreakdown.map(([action, count]) => {
               const style = ACTION_CARD_STYLES[action] || {
-                bg: 'bg-slate-50',
-                text: 'text-slate-700',
-                badge: 'text-slate-600',
+                bg: 'bg-slate-50', text: 'text-slate-700', badge: 'text-slate-600',
               };
               return (
-                <div key={action} className={`${style.bg} rounded-2xl p-4 text-center border border-slate-100`}>
-                  <p className={`text-3xl font-black ${style.badge}`}>{count}</p>
-                  <p className={`text-xs font-black uppercase tracking-wider mt-1 ${style.text}`}>
-                    {action}
-                  </p>
+                <div key={action} className={`${style.bg} rounded-xl sm:rounded-2xl p-4 text-center border border-slate-100`}>
+                  <p className={`text-2xl sm:text-3xl font-black ${style.badge}`}>{count}</p>
+                  <p className={`text-xs font-black uppercase tracking-wider mt-1 ${style.text}`}>{action}</p>
                 </div>
               );
             })}
@@ -385,29 +348,28 @@ const AnalyticsDashboard = () => {
       )}
 
       {/* Revenue Summary */}
-      <div className="mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-black mb-1">Total Revenue Generated</h2>
+            <h2 className="text-lg sm:text-xl font-black mb-1">Total Revenue Generated</h2>
             <p className="text-blue-200 text-sm font-semibold">
               From {paid} confirmed booking{paid !== 1 ? 's' : ''}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-4xl font-black">₹{fmt(totalRevenue)}</p>
+          <div className="sm:text-right">
+            <p className="text-3xl sm:text-4xl font-black">₹{fmt(totalRevenue)}</p>
             <p className="text-blue-200 text-xs font-semibold mt-1">
               Avg. ₹{paid > 0 ? fmt(Math.round(totalRevenue / paid)) : 0} per booking
             </p>
           </div>
         </div>
 
-        {/* Mini sparkline bars */}
         {total > 0 && (
-          <div className="mt-6 flex items-end gap-1 h-12">
+          <div className="mt-5 sm:mt-6 flex items-end gap-1 h-10 sm:h-12">
             {bookingsPerDay.map(({ date, count }) => (
               <div
                 key={date}
-                className="flex-1 bg-white rounded-sm opacity-30 transition-all duration-500"
+                className="flex-1 bg-white rounded-sm transition-all duration-500"
                 style={{
                   height: `${Math.round((count / maxDay) * 100)}%`,
                   minHeight: count > 0 ? '4px' : '2px',
@@ -425,21 +387,21 @@ const AnalyticsDashboard = () => {
 /* ── Sub-components ── */
 
 const StatCard = ({ icon, color, label, value }) => (
-  <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-    <div className={`inline-flex items-center justify-center w-9 h-9 rounded-xl mb-3 ${color}`}>
+  <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm">
+    <div className={`inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl mb-2 sm:mb-3 ${color}`}>
       {icon}
     </div>
-    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-    <p className="text-2xl font-black text-slate-900">{value}</p>
+    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 leading-tight">{label}</p>
+    <p className="text-xl sm:text-2xl font-black text-slate-900">{value}</p>
   </div>
 );
 
 const ACTION_CARD_STYLES = {
-  Cancelled: { bg: 'bg-red-50',    text: 'text-red-500',    badge: 'text-red-600' },
-  Created:   { bg: 'bg-green-50',  text: 'text-green-600',  badge: 'text-green-700' },
-  Booked:    { bg: 'bg-green-50',  text: 'text-green-600',  badge: 'text-green-700' },
-  Updated:   { bg: 'bg-amber-50',  text: 'text-amber-600',  badge: 'text-amber-700' },
-  Paid:      { bg: 'bg-blue-50',   text: 'text-blue-600',   badge: 'text-blue-700' },
+  Cancelled: { bg: 'bg-red-50',   text: 'text-red-500',   badge: 'text-red-600' },
+  Created:   { bg: 'bg-green-50', text: 'text-green-600', badge: 'text-green-700' },
+  Booked:    { bg: 'bg-green-50', text: 'text-green-600', badge: 'text-green-700' },
+  Updated:   { bg: 'bg-amber-50', text: 'text-amber-600', badge: 'text-amber-700' },
+  Paid:      { bg: 'bg-blue-50',  text: 'text-blue-600',  badge: 'text-blue-700' },
 };
 
 export default AnalyticsDashboard;
