@@ -6,9 +6,9 @@ import Footer from './Components/Footer';
 import LoginPage from './Pages/LoginPage'; 
 import HomePage from './Pages/HomePage'; 
 import AdminHistory from './Pages/AdminHistory';
-import ManageBookings from './Pages/ManageBookings'; // Ensure this file exists
-import PaymentPage from './Pages/PaymentPage';     // Ensure this is .jsx
-import BookingPage from './Pages/BookingPage';     // Ensure this is .jsx
+import ManageBookings from './Pages/ManageBookings';
+import BookingPage from './Pages/BookingPage';
+import PaymentPage from './Pages/PaymentPage';
 
 const Layout = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) => (
   <div className="min-h-screen flex flex-col bg-slate-50 font-sans selection:bg-blue-100">
@@ -18,7 +18,7 @@ const Layout = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
       userName={userName} 
       setUserName={setUserName} 
     />
-    <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <main className="flex-grow w-full">
       <Outlet context={{ setIsAuthenticated, setUserName, isAuthenticated, userName }} />
     </main>
     <Footer />
@@ -26,7 +26,6 @@ const Layout = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
 );
 
 function App() {
-  // Initialization pattern below prevents the "cascading render" warning
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem("userToken"));
   const [userName, setUserName] = useState(() => localStorage.getItem("userName") || "");
 
@@ -56,10 +55,10 @@ function App() {
           path: "/login", 
           element: <LoginPage setIsAuthenticated={setIsAuthenticated} setUserName={setUserName} /> 
         },
-        { path: "/history", element: <AdminHistory /> },
-        { path: "/manage", element: <ManageBookings /> }, // Re-added to prevent 404
         { path: "/booking/:flightId", element: <BookingPage /> },
-        { path: "/payment/:bookingId", element: <PaymentPage /> }
+        { path: "/payment/:bookingId", element: <PaymentPage /> },
+        { path: "/admin/history", element: <AdminHistory /> },
+        { path: "/manage", element: <ManageBookings /> }
       ]
     }
   ]);
@@ -70,7 +69,13 @@ function App() {
         position="top-right"
         toastOptions={{
           duration: 3000,
-          style: { background: '#fff', color: '#334155', fontWeight: '600' },
+          style: { 
+            background: '#fff', 
+            color: '#334155', 
+            fontWeight: '600',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          },
         }}
       />
       <RouterProvider router={router} />

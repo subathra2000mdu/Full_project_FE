@@ -1,119 +1,364 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../API/axiosInstance';
-import { User, Mail, Phone, Plane, ArrowRight, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast'; // Import toast
+import { AlertCircle, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const BookingPage = () => {
-    const { flightId } = useParams(); // From route: /booking/:flightId
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        passengerName: '',
-        email: '',
-        phone: ''
-    });
+  const { flightId } = useParams();
+  const navigate = useNavigate();
+  
+  const [flight, setFlight] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [bookingSuccess, setBookingSuccess] = useState('');
+  
+  const [formData, setFormData] = useState({
+    passengerName: '',
+    passengerEmail: '',
+    seatPreference: 'Window'
+  });
 
-    // src/Pages/BookingPage.jsx
-// src/Pages/BookingPage.jsx
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    // Ensure the path matches your backend auth/booking route
-    const response = await API.post('/auth/bookings/create', {
-      flightId,
-      ...formData
-    });
-
-    if (response.data.bookingId) {
-      // Seamlessly transition to the payment route
-      navigate(`/payment/${response.data.bookingId}`);
+  // Fetch flight details on mount
+  useEffect(() => {
+    const selectedFlight = localStorage.getItem('selectedFlight');
+    if (selectedFlight) {
+      try {
+        setFlight(JSON.parse(selectedFlight));
+      } catch (error) {
+        console.error('Error parsing flight data:', error);
+        setBookingError('Invalid flight data. Please try again.');
+      }
     }
-  } catch (error) {
-    console.error("Connection Error:", error);
-    // Detailed error helps debug if it's a 404 or a 500
-    toast.error(error.response?.data?.message || "Check server connection.");
-  } finally {
     setLoading(false);
-  }
-};
+  }, [flightId]);
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.passengerName.trim()) {
+      setBookingError('Please enter passenger name');
+      return false;
+    }
+    if (!formData.passengerEmail.trim()) {
+      setBookingError('Please enter email address');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.passengerEmail)) {
+      setBookingError('Please enter a valid email address');
+      return false;
+    }
+    return true;
+  };
+
+  const handleReserveBooking = async () => {
+    setBookingError('');
+    setBookingSuccess('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!flight?._id) {
+      setBookingError('Flight information is missing. Please go back and select a flight.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Create booking payload
+      const bookingPayload = {
+        flightId: flight._id,
+        passengerName: formData.passengerName.trim(),
+        passengerEmail: formData.passengerEmail.trim(),
+        seatPreference: formData.seatPreference
+      };
+
+      console.log('Sending booking payload:', bookingPayload);
+
+      // Send POST request to reserve flight
+      const response = await API.post('/bookings/reserve', bookingPayload);
+
+      console.log('Booking response:', response.data);
+
+      // FIXED: Accessing _id from response.data.itinerary._id based on your Postman response
+      if (response.data && response.data.itinerary && response.data.itinerary._id) {
+        const bookingId = response.data.itinerary._id;
+        const ref = response.data.itinerary.bookingReference || bookingId.slice(-8).toUpperCase();
+        
+        // Booking successful
+        setBookingSuccess(`✅ Booking Reserved Successfully! Reference: ${ref}`);
+        
+        // Save booking and flight to localStorage
+        localStorage.setItem('currentBooking', JSON.stringify({
+          ...response.data.itinerary,
+          flight: flight
+        }));
+
+        toast.success('Booking reserved! Proceeding to payment...');
+        
+        // Redirect to payment page with slight delay
+        setTimeout(() => {
+          navigate(`/payment/${bookingId}`);
+        }, 1500);
+      } else {
+        setBookingError('Booking failed. Invalid response from server.');
+        toast.error('Booking failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      
+      let errorMessage = '';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Your session has expired. Please login again.';
+        setTimeout(() => navigate('/login'), 1500);
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = 'Failed to reserve booking. Please check your details and try again.';
+      }
+
+      setBookingError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="max-w-2xl mx-auto px-4">
-            <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 overflow-hidden">
-                <div className="bg-blue-600 p-8 text-white">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Plane className="rotate-90" />
-                        <span className="uppercase tracking-widest text-xs font-bold opacity-80">Flight Booking</span>
-                    </div>
-                    <h2 className="text-3xl font-black">Passenger Details</h2>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                            <div className="relative">
-                                <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                                <input 
-                                    required
-                                    type="text" 
-                                    placeholder="Enter passenger name"
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    onChange={(e) => setFormData({...formData, passengerName: e.target.value})}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                                    <input 
-                                        required
-                                        type="email" 
-                                        placeholder="email@example.com"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                                    <input 
-                                        required
-                                        type="tel" 
-                                        placeholder="+91 00000 00000"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-2 group"
-                    >
-                        {loading ? (
-                            <Loader2 className="animate-spin" />
-                        ) : (
-                            <>
-                                Proceed to Payment 
-                                <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
-                            </>
-                        )}
-                    </button>
-                </form>
-            </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+      </div>
     );
+  }
+
+  if (!flight) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-blue-600 font-semibold mb-6 hover:text-blue-700"
+          >
+            <ArrowLeft size={18} /> Back to Search
+          </button>
+          <div className="bg-white rounded-2xl border border-red-200 p-8 text-center">
+            <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+            <h2 className="text-xl font-black text-gray-900 mb-2">No Flight Selected</h2>
+            <p className="text-gray-600 mb-6">Please select a flight from the search results.</p>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-lg transition"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 sm:py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-blue-600 font-semibold mb-6 hover:text-blue-700 transition"
+        >
+          <ArrowLeft size={18} /> Back to Search
+        </button>
+
+        {/* Flight Summary Card */}
+        <div className="bg-white rounded-xl sm:rounded-2xl border-2 border-blue-200 shadow-lg p-6 sm:p-8 mb-6">
+          <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-4">Flight Details</h3>
+          
+          <div className="space-y-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Airline</p>
+                <p className="text-sm sm:text-base font-black text-gray-900">{flight.airline}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Flight #</p>
+                <p className="text-sm sm:text-base font-black text-gray-900">{flight.flightNumber}</p>
+              </div>
+            </div>
+            
+            <div className="h-px bg-gray-200"></div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">From</p>
+                <p className="text-sm sm:text-base font-black text-gray-900">{flight.departureLocation}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">To</p>
+                <p className="text-sm sm:text-base font-black text-gray-900">{flight.arrivalLocation}</p>
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-200"></div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Price</p>
+                <p className="text-lg sm:text-xl font-black text-blue-600">₹{flight.price?.toLocaleString('en-IN')}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Seats Available</p>
+                <p className="text-lg sm:text-xl font-black text-green-600">{flight.seatsAvailable}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Booking Form Card */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-6">Complete Your Booking</h2>
+
+          {/* Success Alert */}
+          {bookingSuccess && (
+            <div className="mb-6 bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
+              <div className="flex gap-3">
+                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="text-green-800 font-semibold text-sm sm:text-base">{bookingSuccess}</p>
+                  <p className="text-green-700 text-xs mt-1">Redirecting to payment...</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {bookingError && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                <p className="text-red-800 font-semibold text-sm sm:text-base">{bookingError}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            
+            {/* Passenger Name */}
+            <div>
+              <label className="block text-sm font-black text-gray-900 mb-2">
+                Passenger Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="passengerName"
+                value={formData.passengerName}
+                onChange={handleInputChange}
+                placeholder="Enter full name"
+                disabled={submitting}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none transition font-semibold text-gray-900 disabled:opacity-50"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-black text-gray-900 mb-2">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="passengerEmail"
+                value={formData.passengerEmail}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                disabled={submitting}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none transition font-semibold text-gray-900 disabled:opacity-50"
+              />
+              <p className="text-xs text-gray-500 font-semibold mt-1">
+                Your booking confirmation will be sent here
+              </p>
+            </div>
+
+            {/* Seat Preference */}
+            <div>
+              <label className="block text-sm font-black text-gray-900 mb-2">
+                Seat Preference
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {['Window', 'Aisle', 'Middle'].map(preference => (
+                  <button
+                    key={preference}
+                    onClick={() => setFormData(prev => ({ ...prev, seatPreference: preference }))}
+                    disabled={submitting}
+                    className={`py-3 px-4 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${
+                      formData.seatPreference === preference
+                        ? 'bg-blue-600 text-white border-2 border-blue-600'
+                        : 'bg-gray-100 text-gray-900 border-2 border-gray-200 hover:border-blue-400'
+                    }`}
+                  >
+                    {preference}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Summary */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 mt-6">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-gray-700">Total Amount</span>
+                <span className="text-2xl font-black text-blue-600">₹{flight.price?.toLocaleString('en-IN')}</span>
+              </div>
+              <p className="text-xs text-gray-600 font-semibold mt-2">
+                You will be redirected to payment after booking confirmation
+              </p>
+            </div>
+
+            {/* Reserve Button */}
+            <button
+              onClick={handleReserveBooking}
+              disabled={submitting || bookingSuccess}
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-base sm:text-lg mt-8"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>Reserving Booking...</span>
+                </>
+              ) : bookingSuccess ? (
+                <>
+                  <CheckCircle size={20} />
+                  <span>Booking Reserved!</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={20} />
+                  <span>Reserve Booking</span>
+                </>
+              )}
+            </button>
+
+            <p className="text-xs text-center text-gray-500 font-semibold mt-4">
+              By clicking "Reserve Booking", you agree to our terms and conditions
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default BookingPage;
