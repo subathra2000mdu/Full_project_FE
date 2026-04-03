@@ -8,7 +8,17 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const AdminHistory = () => {
-  const { isAuthenticated } = useOutletContext();
+  // useOutletContext may not always be available; fall back gracefully
+  let isAuthenticated = true;
+  try {
+    const ctx = useOutletContext();
+    if (ctx && typeof ctx.isAuthenticated !== 'undefined') {
+      isAuthenticated = ctx.isAuthenticated;
+    }
+  } catch {
+    // not inside an Outlet — treat as authenticated
+  }
+
   const navigate = useNavigate();
 
   const [bookings, setBookings]         = useState([]);
@@ -17,34 +27,62 @@ const AdminHistory = () => {
   const [activeTab, setActiveTab]       = useState('bookings');
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    const token = localStorage.getItem('userToken');
+    if (!isAuthenticated && !token) {
       toast.error('Please login to view history');
       navigate('/login');
       return;
     }
 
     const fetchAll = async () => {
+      setLoading(true);
       try {
-        // Both endpoints run in parallel; if one fails the other still loads
+        // Run both in parallel; if one fails the other still loads
         const [adminRes, userRes] = await Promise.allSettled([
-          // ── All bookings (admin) ──────────────────────────────────────────
+          // All bookings endpoint
           axios.get('/auth/admin/history'),
-          // ── Current user's activity logs (histories collection) ───────────
+          // User activity logs endpoint
           axios.get('/auth/bookings/my-history')
         ]);
 
         if (adminRes.status === 'fulfilled') {
           const data = adminRes.value.data;
-          setBookings(Array.isArray(data) ? data : []);
+          // Handle both array responses and nested { bookings: [] } responses
+          if (Array.isArray(data)) {
+            setBookings(data);
+          } else if (Array.isArray(data?.bookings)) {
+            setBookings(data.bookings);
+          } else if (Array.isArray(data?.data)) {
+            setBookings(data.data);
+          } else {
+            setBookings([]);
+          }
         } else {
           console.warn('Admin history error:', adminRes.reason?.response?.data || adminRes.reason?.message);
+          // Fallback: try fetching user's own bookings
+          try {
+            const fallback = await axios.get('/bookings/my-bookings');
+            const d = fallback.data;
+            setBookings(Array.isArray(d) ? d : Array.isArray(d?.bookings) ? d.bookings : []);
+          } catch {
+            setBookings([]);
+          }
         }
 
         if (userRes.status === 'fulfilled') {
           const data = userRes.value.data;
-          setActivityLogs(Array.isArray(data) ? data : []);
+          if (Array.isArray(data)) {
+            setActivityLogs(data);
+          } else if (Array.isArray(data?.logs)) {
+            setActivityLogs(data.logs);
+          } else if (Array.isArray(data?.data)) {
+            setActivityLogs(data.data);
+          } else {
+            setActivityLogs([]);
+          }
         } else {
           console.warn('User history error:', userRes.reason?.response?.data || userRes.reason?.message);
+          setActivityLogs([]);
         }
       } catch (err) {
         console.error('Unexpected fetch error:', err);
@@ -57,9 +95,43 @@ const AdminHistory = () => {
     fetchAll();
   }, [isAuthenticated, navigate]);
 
+  // ── Download PDF receipt ──
+  const handleDownloadReceipt = async (bookingId) => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${baseUrl}/bookings/download/${bookingId}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const url  = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href  = url;
+      link.setAttribute('download', `receipt-${bookingId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Receipt downloaded!');
+    } catch (err) {
+      console.error('PDF error:', err);
+      toast.error('Could not download receipt.');
+    }
+  };
+
   /* ── helpers ── */
-  const fmt = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const fmtTime = (d) => new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const fmt = (d) => {
+    if (!d) return 'N/A';
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+  const fmtTime = (d) => {
+    if (!d) return '';
+    return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  };
 
   const totalBookings  = bookings.length;
   const confirmedCount = bookings.filter(b => b.paymentStatus === 'Completed').length;
@@ -87,9 +159,9 @@ const AdminHistory = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatCard icon={<BarChart3 size={20} />} color="text-blue-600" label="Total Bookings"  value={totalBookings} />
-        <StatCard icon={<CheckCircle size={20} />} color="text-green-600" label="Confirmed"    value={confirmedCount} />
-        <StatCard icon={<Clock size={20} />}      color="text-purple-600" label="Activity Logs" value={activityCount} />
+        <StatCard icon={<BarChart3 size={20} />} color="text-blue-600"   label="Total Bookings"  value={totalBookings} />
+        <StatCard icon={<CheckCircle size={20} />} color="text-green-600" label="Confirmed"       value={confirmedCount} />
+        <StatCard icon={<Clock size={20} />}       color="text-purple-600" label="Activity Logs"  value={activityCount} />
       </div>
 
       {/* Main card */}
@@ -102,8 +174,8 @@ const AdminHistory = () => {
           {/* Tabs */}
           <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
             {[
-              { key: 'bookings',  label: 'All Bookings',   count: totalBookings,  badgeColor: 'bg-blue-100 text-blue-600' },
-              { key: 'activity',  label: 'Activity Logs',  count: activityCount,  badgeColor: 'bg-purple-100 text-purple-600' }
+              { key: 'bookings', label: 'All Bookings',  count: totalBookings, badgeColor: 'bg-blue-100 text-blue-600' },
+              { key: 'activity', label: 'Activity Logs', count: activityCount, badgeColor: 'bg-purple-100 text-purple-600' }
             ].map(({ key, label, count, badgeColor }) => (
               <button key={key} onClick={() => setActiveTab(key)}
                 className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${
@@ -158,7 +230,8 @@ const AdminHistory = () => {
                       </span>
                     )}
                     <StatusBadge status={log.paymentStatus} />
-                    <button onClick={() => toast.success('Preparing PDF receipt…')}
+                    <button
+                      onClick={() => handleDownloadReceipt(log._id)}
                       className="flex items-center space-x-2 px-5 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
                       <Download size={13} />
                       <span className="hidden sm:inline">Receipt</span>
@@ -176,8 +249,8 @@ const AdminHistory = () => {
             {activityLogs.length === 0 ? (
               <EmptyState message="No activity logs found." sub="New activity will appear here automatically." />
             ) : (
-              activityLogs.map(log => (
-                <div key={log._id}
+              activityLogs.map((log, idx) => (
+                <div key={log._id || idx}
                   className="group flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-100 rounded-3xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 gap-4">
 
                   <div className="flex items-center space-x-5">
@@ -198,7 +271,7 @@ const AdminHistory = () => {
                       )}
                       <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 mt-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                        {fmt(log.timestamp)} · {fmtTime(log.timestamp)}
+                        {fmt(log.timestamp)} {fmtTime(log.timestamp) ? `· ${fmtTime(log.timestamp)}` : ''}
                       </p>
                     </div>
                   </div>

@@ -8,59 +8,48 @@ import {
 import toast from 'react-hot-toast';
 
 const HomePage = () => {
-  const [search, setSearch]         = useState({ from: '', to: '', date: '' });
-  const [flights, setFlights]       = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [error, setError]           = useState('');
+  const [search, setSearch]             = useState({ from: '', to: '', date: '' });
+  const [flights, setFlights]           = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [hasSearched, setHasSearched]   = useState(false);
+  const [error, setError]               = useState('');
 
-  // Booking / cancellation state
-  const [currentBooking, setCurrentBooking]   = useState(null);  // from localStorage
-  const [paymentInfo, setPaymentInfo]         = useState(null);   // from localStorage
-  const [cancellingId, setCancellingId]       = useState(null);   // bookingId being cancelled
-  const [cancelledIds, setCancelledIds]       = useState([]);     // cancelled this session
-  const [cancellationRate, setCancellationRate] = useState(50);   // Defaulting to 50%
+  const [currentBooking, setCurrentBooking]     = useState(null);
+  const [paymentInfo, setPaymentInfo]           = useState(null);
+  const [cancellingId, setCancellingId]         = useState(null);
+  const [cancelledIds, setCancelledIds]         = useState([]);
+  const [cancellationRate, setCancellationRate] = useState(50);
 
   const navigate = useNavigate();
 
-  // ── On mount: read localStorage + fetch admin dashboard for cancellation rate ──
   useEffect(() => {
     const rawBooking = localStorage.getItem('currentBooking');
     const rawPayment = localStorage.getItem('paymentInfo');
-
-    if (rawBooking) {
-      try { setCurrentBooking(JSON.parse(rawBooking)); } catch { /* ignore */ }
-    }
-    if (rawPayment) {
-      try { setPaymentInfo(JSON.parse(rawPayment)); } catch { /* ignore */ }
-    }
+    if (rawBooking) { try { setCurrentBooking(JSON.parse(rawBooking)); } catch { /* ignore */ } }
+    if (rawPayment) { try { setPaymentInfo(JSON.parse(rawPayment));    } catch { /* ignore */ } }
 
     const fetchDashboard = async () => {
       try {
-        const res = await API.get('/admin/dashboard');
-        // If the backend returns a string like "50.00%", we extract the number
+        const res     = await API.get('/admin/dashboard');
         const rateStr = res.data?.cancellationRate || '50%';
-        const rate = parseFloat(rateStr);
+        const rate    = parseFloat(rateStr);
         if (!isNaN(rate)) setCancellationRate(rate);
       } catch (err) {
-        console.warn('Dashboard fetch failed, staying at 50%:', err.message);
-        setCancellationRate(50); // Hard fallback
+        console.warn('Dashboard fetch failed, using 50%:', err.message);
+        setCancellationRate(50);
       }
     };
     fetchDashboard();
   }, []);
 
-  // ── Determine if a flight is currently booked & paid ──
   const isFlightBooked = (flightId) => {
-    if (!currentBooking) return false;
-    if (currentBooking.paymentStatus !== 'Completed') return false;
-    if (cancelledIds.includes(currentBooking._id)) return false;
-
+    if (!currentBooking)                                       return false;
+    if (currentBooking.paymentStatus !== 'Completed')         return false;
+    if (cancelledIds.includes(currentBooking._id))            return false;
     const bookedFlightId = currentBooking.flight?._id || currentBooking.flight || '';
     return bookedFlightId.toString() === flightId.toString();
   };
 
-  // ── Search ──
   const handleSearch = async () => {
     if (!search.from || !search.to) {
       setError('Please enter both departure and arrival IATA codes (e.g., MAA, BOM)');
@@ -75,8 +64,8 @@ const HomePage = () => {
         params: {
           from: search.from.toUpperCase(),
           to:   search.to.toUpperCase(),
-          date: search.date || undefined
-        }
+          date: search.date || undefined,
+        },
       });
       setFlights(res.data);
       setHasSearched(true);
@@ -96,37 +85,25 @@ const HomePage = () => {
     navigate(`/booking/${flight._id}`);
   };
 
-  // ── Cancel Ticket Logic ──
   const handleCancelTicket = async (flight) => {
-    if (!currentBooking?._id) {
-      toast.error('Booking not found.');
-      return;
-    }
+    if (!currentBooking?._id) { toast.error('Booking not found.'); return; }
 
-    // Calculation: (Actual Paid Amount) * (50 / 100)
     const paidAmount   = paymentInfo?.amount || flight.price || 0;
     const refundAmount = Math.round(paidAmount * (cancellationRate / 100));
 
     const confirmed = window.confirm(
       `⚠️ Cancel Ticket Confirmation\n\n` +
-      `Flight   : ${flight.airline} (${flight.flightNumber})\n` +
-      `Paid     : ₹${paidAmount.toLocaleString('en-IN')}\n` +
-      `Refund   : ₹${refundAmount.toLocaleString('en-IN')} (${cancellationRate}%)\n\n` +
+      `Flight : ${flight.airline} (${flight.flightNumber})\n` +
+      `Paid   : ₹${paidAmount.toLocaleString('en-IN')}\n` +
+      `Refund : ₹${refundAmount.toLocaleString('en-IN')} (${cancellationRate}%)\n\n` +
       `Are you sure? This cannot be undone.`
     );
-
     if (!confirmed) return;
 
     setCancellingId(currentBooking._id);
     try {
-      await API.patch(`/bookings/update/${currentBooking._id}`, {
-        paymentStatus: 'Cancelled'
-      });
-
-      toast.success(
-        `Cancelled! ₹${refundAmount.toLocaleString('en-IN')} will be refunded.`
-      );
-
+      await API.patch(`/bookings/update/${currentBooking._id}`, { paymentStatus: 'Cancelled' });
+      toast.success(`Cancelled! ₹${refundAmount.toLocaleString('en-IN')} will be refunded.`);
       setCancelledIds(prev => [...prev, currentBooking._id]);
       localStorage.removeItem('currentBooking');
       localStorage.removeItem('paymentInfo');
@@ -139,18 +116,30 @@ const HomePage = () => {
     }
   };
 
+  // ── Format departure time in IST ─────────────────────────────────────────────
   const formatTime = (dateStr) => {
     if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleTimeString('en-IN', {
-      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
+      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
     });
   };
 
+  // ── Format date in IST — this is what we show in the flight card ─────────────
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata'
+      day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata',
     });
+  };
+
+  // ── Extract YYYY-MM-DD in IST from a Date/string ──────────────────────────────
+  // This is critical: new Date(dateStr).toISOString() gives UTC date, which may
+  // be a different calendar day than IST (UTC+5:30).
+  // We use toLocaleDateString with 'sv-SE' locale which returns YYYY-MM-DD in local TZ.
+  const getISTDateString = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' });
+    // sv-SE returns "2026-04-10" format — perfect for comparison
   };
 
   const getStatusColor = (status) => {
@@ -164,15 +153,26 @@ const HomePage = () => {
     return map[status?.toLowerCase()] || 'bg-gray-100 text-gray-600';
   };
 
+  // ── Filter flights by selected date using IST comparison ─────────────────────
+  // The backend also filters, but this ensures the frontend display is consistent.
+  const displayedFlights = search.date
+    ? flights.filter(f => {
+        if (!f.departureTime) return true;
+        return getISTDateString(f.departureTime) === search.date;
+      })
+    : flights;
+
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
-      {/* Search Header */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 py-14 mb-8">
+
+      {/* ── Search Header ── */}
+      <div className="bg-gradient-to-br from-blue-600 py-14 mb-8">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <h1 className="text-4xl font-black text-white mb-2">Where to next?</h1>
+          <h1 className="text-4xl font-black text-white mb-2">Enjoy Your Journey</h1>
           <p className="text-blue-200 mb-8 font-medium">Search flights across India</p>
 
           <div className="bg-white rounded-2xl shadow-2xl p-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* From */}
             <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border">
               <MapPin className="text-blue-400 mr-2 shrink-0" size={18} />
               <div className="w-full">
@@ -188,6 +188,7 @@ const HomePage = () => {
               </div>
             </div>
 
+            {/* To */}
             <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border">
               <MapPin className="text-red-400 mr-2 shrink-0" size={18} />
               <div className="w-full">
@@ -203,6 +204,7 @@ const HomePage = () => {
               </div>
             </div>
 
+            {/* Date */}
             <div className="flex items-center px-4 py-3 bg-slate-50 rounded-xl border">
               <Calendar className="text-slate-400 mr-2 shrink-0" size={18} />
               <div className="w-full">
@@ -216,6 +218,7 @@ const HomePage = () => {
               </div>
             </div>
 
+            {/* Search button */}
             <button
               onClick={handleSearch}
               disabled={loading}
@@ -228,11 +231,41 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Results Section */}
+      {/* ── Error banner ── */}
+      {error && (
+        <div className="max-w-6xl mx-auto px-4 mb-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="text-red-500 shrink-0" size={18} />
+            <p className="text-red-700 font-semibold text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Results ── */}
       <div className="max-w-6xl mx-auto px-4">
-        {!loading && hasSearched && flights.length > 0 && (
+
+        {loading && (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-blue-600" size={40} />
+          </div>
+        )}
+
+        {!loading && hasSearched && displayedFlights.length > 0 && (
           <div className="space-y-4">
-            {flights.map((f) => {
+            {/* Date notice */}
+            {search.date && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-2">
+                <Calendar className="text-blue-500 shrink-0" size={16} />
+                <p className="text-blue-700 text-sm font-semibold">
+                  Showing {displayedFlights.length} flight{displayedFlights.length !== 1 ? 's' : ''} on{' '}
+                  {new Date(search.date + 'T00:00:00').toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                  })}
+                </p>
+              </div>
+            )}
+
+            {displayedFlights.map((f) => {
               const booked       = isFlightBooked(f._id);
               const isCancelling = cancellingId === currentBooking?._id && booked;
               const paidAmount   = paymentInfo?.amount || f.price || 0;
@@ -242,26 +275,44 @@ const HomePage = () => {
                 <div
                   key={f._id}
                   className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
-                    booked ? 'border-red-200 shadow-md' : 'border-slate-200 hover:border-blue-200 hover:shadow-lg'
+                    booked
+                      ? 'border-red-200 shadow-md'
+                      : 'border-slate-200 hover:border-blue-200 hover:shadow-lg'
                   }`}
                 >
                   <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className={`h-14 w-14 rounded-full flex items-center justify-center shrink-0 ${booked ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                      <div className={`h-14 w-14 rounded-full flex items-center justify-center shrink-0 ${
+                        booked ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
+                      }`}>
                         <Plane size={24} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className={`font-black text-sm ${booked ? 'text-red-500' : 'text-blue-600'}`}>{f.airline}</span>
+                          <span className={`font-black text-sm ${booked ? 'text-red-500' : 'text-blue-600'}`}>
+                            {f.airline}
+                          </span>
                           <span className="text-slate-300">•</span>
-                          <span className="text-slate-400 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">{f.flightNumber}</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${getStatusColor(f.status)}`}>{f.status}</span>
-                          {booked && <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600">Your Booking</span>}
+                          <span className="text-slate-400 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">
+                            {f.flightNumber}
+                          </span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${getStatusColor(f.status)}`}>
+                            {f.status}
+                          </span>
+                          {booked && (
+                            <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                              Your Booking
+                            </span>
+                          )}
                         </div>
-                        <h3 className="text-lg font-black text-slate-900">{f.departureLocation} → {f.arrivalLocation}</h3>
+                        <h3 className="text-lg font-black text-slate-900">
+                          {f.departureLocation} → {f.arrivalLocation}
+                        </h3>
                         <div className="flex items-center gap-4 mt-1 flex-wrap">
+                          {/* ── Correct IST time and date display ── */}
                           <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                            <Clock size={12} /> {formatTime(f.departureTime)} • {formatDate(f.departureTime)}
+                            <Clock size={12} />
+                            {formatTime(f.departureTime)} • {formatDate(f.departureTime)}
                           </span>
                           <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
                             <Users size={12} /> {f.seatsAvailable} seats left
@@ -278,7 +329,9 @@ const HomePage = () => {
                     <div className="flex flex-row md:flex-col items-center md:items-end gap-3 ml-auto">
                       <div className="text-right">
                         <p className="text-xs text-slate-400 font-semibold">Price</p>
-                        <p className="text-2xl font-black text-slate-900">₹{f.price?.toLocaleString('en-IN')}</p>
+                        <p className="text-2xl font-black text-slate-900">
+                          ₹{f.price?.toLocaleString('en-IN')}
+                        </p>
                       </div>
 
                       {booked ? (
@@ -287,7 +340,10 @@ const HomePage = () => {
                           disabled={isCancelling}
                           className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl text-sm font-black transition disabled:opacity-50 flex items-center gap-2"
                         >
-                          {isCancelling ? <Loader2 className="animate-spin" size={15} /> : <XCircle size={15} />}
+                          {isCancelling
+                            ? <Loader2 className="animate-spin" size={15} />
+                            : <XCircle size={15} />
+                          }
                           {isCancelling ? 'Cancelling...' : 'Cancel Ticket'}
                         </button>
                       ) : (
@@ -306,11 +362,34 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Initial/Empty States */}
+        {/* Date selected but no flights match */}
+        {!loading && hasSearched && flights.length > 0 && displayedFlights.length === 0 && (
+          <div className="bg-white border rounded-3xl p-20 text-center">
+            <Calendar className="mx-auto text-slate-200 mb-4" size={48} />
+            <h3 className="text-lg font-bold text-slate-800">No Flights on Selected Date</h3>
+            <p className="text-slate-500 text-sm mt-1">
+              Try a different date or search without a date to see all available flights.
+            </p>
+          </div>
+        )}
+
+        {/* No flights at all */}
         {!loading && hasSearched && flights.length === 0 && (
           <div className="bg-white border rounded-3xl p-20 text-center">
             <AlertCircle className="mx-auto text-slate-200 mb-4" size={48} />
             <h3 className="text-lg font-bold text-slate-800">No Flights Found</h3>
+            <p className="text-slate-500 text-sm mt-1">Try different IATA codes or date.</p>
+          </div>
+        )}
+
+        {/* Pre-search state */}
+        {!loading && !hasSearched && (
+          <div className="bg-white border rounded-3xl p-20 text-center">
+            <Plane className="mx-auto text-slate-200 mb-4" size={48} />
+            <h3 className="text-lg font-bold text-slate-800">Search for Flights</h3>
+            <p className="text-slate-500 text-sm mt-1">
+              Enter departure and arrival codes above to get started.
+            </p>
           </div>
         )}
       </div>
