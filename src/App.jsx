@@ -9,6 +9,7 @@ import AdminHistory from './Pages/AdminHistory';
 import ManageBookings from './Pages/ManageBookings';
 import BookingPage from './Pages/BookingPage';
 import PaymentPage from './Pages/PaymentPage';
+import AnalyticsDashboard from './Pages/Analyticsdashboard';
 
 const Layout = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) => (
   <div className="min-h-screen flex flex-col bg-slate-50 font-sans selection:bg-blue-100">
@@ -51,6 +52,7 @@ function App() {
       ),
       children: [
         { path: "/", element: <HomePage /> },
+        { path: "/analytics", element: <AnalyticsDashboard /> },
         { 
           path: "/login", 
           element: <LoginPage setIsAuthenticated={setIsAuthenticated} setUserName={setUserName} /> 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import API from '../API/axiosInstance';
 import {
   ArrowLeft, Loader2, AlertCircle, Lock,
-  CreditCard, Wallet, Building2, Eye, EyeOff, CheckCircle
+  Eye, EyeOff, CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -73,10 +73,10 @@ const PaymentPage = () => {
   };
 
   const validateCard = () => {
-    if (!formData.cardholderName.trim())                          { setError('Please enter cardholder name'); return false; }
-    if (formData.cardNumber.replace(/\s/g, '').length !== 16)    { setError('Please enter a valid 16-digit card number'); return false; }
-    if (formData.expiryDate.length !== 5)                        { setError('Please enter a valid expiry date (MM/YY)'); return false; }
-    if (formData.cvv.length < 3)                                 { setError('Please enter a valid CVV (3–4 digits)'); return false; }
+    if (!formData.cardholderName.trim())                       { setError('Please enter cardholder name'); return false; }
+    if (formData.cardNumber.replace(/\s/g, '').length !== 16) { setError('Please enter a valid 16-digit card number'); return false; }
+    if (formData.expiryDate.length !== 5)                     { setError('Please enter a valid expiry date (MM/YY)'); return false; }
+    if (formData.cvv.length < 3)                              { setError('Please enter a valid CVV (3-4 digits)'); return false; }
     return true;
   };
 
@@ -96,41 +96,24 @@ const PaymentPage = () => {
     return true;
   };
 
-  // ── PDF Download ─────────────────────────────────────────────────────────────
-  // Uses API.defaults.baseURL (set in axiosInstance) — avoids process.env entirely
   const downloadBookingPDF = async (bId) => {
     try {
-      const token   = localStorage.getItem('userToken');
-      // API.defaults.baseURL comes from your axiosInstance file (e.g. http://localhost:3001/api)
-      const apiBase = API.defaults.baseURL || 'http://localhost:3001/api';
-      const pdfUrl  = `${apiBase}/auth/bookings/download/${bId}`;
-
-      const response = await fetch(pdfUrl, {
-        method:  'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept:         'application/pdf, */*',
-        },
+      const response = await API.get(`/bookings/download/${bId}`, {
+        responseType: 'blob',
+        headers: { 'Accept': 'application/pdf, */*' }
       });
-
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
-
-      const blob      = await response.blob();
+      const blob      = new Blob([response.data], { type: 'application/pdf' });
       const objectUrl = window.URL.createObjectURL(blob);
       const link      = document.createElement('a');
-      link.href        = objectUrl;
-      link.download    = `booking-receipt-${bId}.pdf`;
+      link.href       = objectUrl;
+      link.download   = `booking-receipt-${bId}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(objectUrl);
-
-      toast.success('📄 PDF receipt downloaded!');
+      toast.success('PDF receipt downloaded!');
     } catch (err) {
       console.error('PDF download error:', err);
-      // Non-blocking — don't fail the whole payment flow
       toast.error('Could not auto-download PDF. Download it from History page.');
     }
   };
@@ -151,13 +134,12 @@ const PaymentPage = () => {
 
     setProcessing(true);
     try {
-      // STEP 1 — create intent
       const intentRes = await API.post('/payments/create-intent', {
-        bookingId:   booking._id,
-        amount:      booking.flight?.price || 0,
-        currency:    'INR',
+        bookingId:      booking._id,
+        amount:         booking.flight?.price || 0,
+        currency:       'INR',
         paymentMethod,
-        description: `Payment for booking ${booking.bookingReference || booking._id}`,
+        description:    `Payment for booking ${booking.bookingReference || booking._id}`,
         paymentDetails: {
           method: paymentMethod,
           ...(paymentMethod === 'card' && {
@@ -167,22 +149,21 @@ const PaymentPage = () => {
           }),
           ...(paymentMethod === 'upi'  && { upiId: formData.upiId }),
           ...(paymentMethod === 'bank' && {
-            bankName:           formData.bankName,
-            last4:              formData.accountNumber.slice(-4),
-            ifscCode:           formData.ifscCode,
-            accountHolderName:  formData.accountHolderName,
+            bankName:          formData.bankName,
+            last4:             formData.accountNumber.slice(-4),
+            ifscCode:          formData.ifscCode,
+            accountHolderName: formData.accountHolderName,
           }),
         },
       });
 
       if (!intentRes.data?.clientSecret) throw new Error('Payment intent creation failed.');
 
-      // STEP 2 — confirm (updates DB + sends email)
       const confirmRes = await API.post('/payments/confirm', { bookingId: booking._id });
 
       if (confirmRes.data?.message) {
         setSuccess(confirmRes.data.message);
-        toast.success('✅ Payment confirmed! Booking confirmation email sent.');
+        toast.success('Payment confirmed! Booking confirmation email sent.');
 
         const updatedBooking = { ...booking, paymentStatus: 'Completed' };
         localStorage.setItem('currentBooking', JSON.stringify(updatedBooking));
@@ -194,10 +175,7 @@ const PaymentPage = () => {
           reference: intentRes.data.clientSecret,
         }));
 
-        // STEP 3 — Auto-download PDF receipt (non-blocking)
         await downloadBookingPDF(booking._id);
-
-        // Redirect home
         setTimeout(() => navigate('/'), 2500);
       } else {
         throw new Error('Payment confirmation did not return a success message.');
@@ -215,7 +193,6 @@ const PaymentPage = () => {
     }
   };
 
-  /* ── Loading state ── */
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
@@ -224,7 +201,6 @@ const PaymentPage = () => {
     );
   }
 
-  /* ── No booking found ── */
   if (!booking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
@@ -247,11 +223,45 @@ const PaymentPage = () => {
 
   const flightPrice = booking.flight?.price || 0;
 
-  // ── Tab config — using IconComponent name avoids "Icon defined but never used" lint error ──
+  /* ── Payment method tab definitions ──
+     FIX: Removed IconComponent from the array — used direct JSX instead
+     to avoid the ESLint "defined but never used" false positive that occurs
+     when a component reference is passed through an array and rendered as
+     <IconComponent /> (the linter sees the binding but not the JSX usage). */
   const paymentTabs = [
-    { key: 'card', label: 'Card', IconComponent: CreditCard },
-    { key: 'upi',  label: 'UPI',  IconComponent: Wallet     },
-    { key: 'bank', label: 'Bank', IconComponent: Building2  },
+    {
+      key: 'card',
+      label: 'Card',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'upi',
+      label: 'UPI',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'bank',
+      label: 'Bank',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/>
+          <line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/>
+          <line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/>
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -271,7 +281,7 @@ const PaymentPage = () => {
             <div>
               <p className="text-green-800 font-semibold text-sm">{success}</p>
               <p className="text-green-700 text-xs mt-1">
-                Confirmation email sent &amp; PDF receipt downloaded. Redirecting to home…
+                Confirmation email sent &amp; PDF receipt downloaded. Redirecting to home...
               </p>
             </div>
           </div>
@@ -279,7 +289,7 @@ const PaymentPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* ── LEFT: PAYMENT FORM ── */}
+          {/* LEFT: PAYMENT FORM */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
               <Lock className="text-blue-600" size={24} /> Choose Payment Method
@@ -292,9 +302,9 @@ const PaymentPage = () => {
               </div>
             )}
 
-            {/* Method tabs */}
+            {/* Payment method tabs — icon rendered directly as JSX, no IconComponent variable */}
             <div className="grid grid-cols-3 gap-2 mb-6">
-              {paymentTabs.map(({ key, label, IconComponent }) => (
+              {paymentTabs.map(({ key, label, icon }) => (
                 <button
                   key={key}
                   onClick={() => { setPaymentMethod(key); setError(''); }}
@@ -304,7 +314,7 @@ const PaymentPage = () => {
                       : 'bg-gray-100 text-gray-900 border-2 border-gray-200 hover:border-blue-400'
                   }`}
                 >
-                  <IconComponent size={16} />
+                  {icon}
                   {label}
                 </button>
               ))}
@@ -358,7 +368,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-xs text-blue-800 font-semibold">
-                    💳 Test Card: 4242 4242 4242 4242 | Any future date | Any CVV
+                    Test Card: 4242 4242 4242 4242 | Any future date | Any CVV
                   </p>
                 </div>
               </div>
@@ -378,7 +388,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-xs text-blue-800 font-semibold">
-                    📱 Supported: Google Pay, PhonePe, Paytm, WhatsApp Pay, BHIM
+                    Supported: Google Pay, PhonePe, Paytm, WhatsApp Pay, BHIM
                   </p>
                 </div>
               </div>
@@ -433,7 +443,7 @@ const PaymentPage = () => {
             )}
           </div>
 
-          {/* ── RIGHT: ORDER SUMMARY ── */}
+          {/* RIGHT: ORDER SUMMARY */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
               <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
@@ -445,6 +455,8 @@ const PaymentPage = () => {
                   ['Passenger Name',    booking.passengerDetails?.name  || 'N/A'],
                   ['Email',             booking.passengerDetails?.email || 'N/A'],
                   ['Seat Preference',   booking.seatPreference          || 'N/A'],
+                  ...(booking.passengers ? [['Passengers', booking.passengers]] : []),
+                  ...(booking.bookingClass ? [['Class', booking.bookingClass]] : []),
                   ...(booking.flight ? [
                     ['Flight', `${booking.flight.airline} (${booking.flight.flightNumber})`],
                     ['Route',  `${booking.flight.departureLocation} → ${booking.flight.arrivalLocation}`],
@@ -458,7 +470,9 @@ const PaymentPage = () => {
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-black text-gray-900">Total Amount</span>
-                    <span className="text-3xl font-black text-blue-600">₹{flightPrice.toLocaleString('en-IN')}</span>
+                    <span className="text-3xl font-black text-blue-600">
+                      ₹{flightPrice.toLocaleString('en-IN')}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-600 font-semibold mt-2">Price per person for flight booking</p>
                 </div>
@@ -476,6 +490,7 @@ const PaymentPage = () => {
                   'Money-back guarantee if booking cancels',
                   '24/7 customer support available',
                   'PDF receipt auto-downloaded after payment',
+                  'Booking confirmation email sent instantly',
                 ].map(t => (
                   <div key={t} className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 bg-green-600 rounded-full flex-shrink-0" />
@@ -488,12 +503,13 @@ const PaymentPage = () => {
                 disabled={processing || !!success}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-lg transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
               >
-                {processing
-                  ? (<><Loader2 className="animate-spin" size={20} /><span>Processing Payment…</span></>)
-                  : success
-                  ? (<><CheckCircle size={20} /><span>Payment Successful!</span></>)
-                  : (<><Lock size={20} /><span>Confirm &amp; Pay ₹{flightPrice.toLocaleString('en-IN')}</span></>)
-                }
+                {processing ? (
+                  <><Loader2 className="animate-spin" size={20} /><span>Processing Payment...</span></>
+                ) : success ? (
+                  <><CheckCircle size={20} /><span>Payment Successful!</span></>
+                ) : (
+                  <><Lock size={20} /><span>Confirm &amp; Pay ₹{flightPrice.toLocaleString('en-IN')}</span></>
+                )}
               </button>
               <p className="text-xs text-center text-gray-600 font-semibold mt-4">
                 By confirming, you agree to our Terms &amp; Conditions

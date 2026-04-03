@@ -17,13 +17,14 @@ const Header = ({ isAuthenticated, setIsAuthenticated, userName, setUserName }) 
   return (
     <header className="w-full py-6 px-10 bg-white shadow-sm flex justify-between items-center border-b sticky top-0 z-50">
       <div className="text-2xl font-black text-blue-600 tracking-tighter">
-        <Link to="/">Flight Booking and Reservation System</Link>
+        <Link to="/">Flight Booking</Link>
       </div>
       <nav className="flex items-center space-x-8 font-bold text-gray-500 text-sm">
         <Link to="/" className="hover:text-blue-600 transition">Home</Link>
         
         {/* ADDED ADMIN LINKS */}
         <Link to="/admin/history" className="hover:text-blue-600 transition">History</Link>
+        <Link to="/analytics" className="hover:text-blue-600 transition">Analytics</Link>
 
         {isAuthenticated ? (
           <div className="flex items-center space-x-4">
