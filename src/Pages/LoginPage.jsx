@@ -16,7 +16,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    
+    // Basic validation
     if (!formData.email.toLowerCase().endsWith('@gmail.com')) {
       toast.error("Only @gmail.com addresses are allowed.");
       return;
@@ -37,7 +37,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
         toast.success("Account created! Please sign in.");
         setIsRegistering(false);
       } else {
-        
+        // Handle successful login
         const finalName = data.user?.name || formData.email.split('@')[0];
         
         localStorage.setItem('userToken', data.token);
@@ -46,11 +46,12 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
         setUserName(finalName);
         setIsAuthenticated(true);
         toast.success(`Welcome back, ${finalName}!`);
+        
+        // Redirect to home after login
         navigate('/'); 
       }
     } catch (err) {
-      
-      const errMsg = err.response?.data?.message || "Incorrect email or password";
+      const errMsg = err.response?.data?.message || "Authentication failed. Please check your details.";
       toast.error(errMsg);
     } finally {
       setIsLoading(false);
@@ -58,7 +59,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   };
 
   return (
-    <div className="w-full flex items-center justify-center p-4">
+    <div className="w-full min-h-[80vh] flex items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
           {isRegistering ? "Create Account" : "Welcome Back"}
@@ -74,6 +75,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
               name="name" 
               placeholder="Full Name" 
               required 
+              value={formData.name}
               onChange={handleChange} 
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" 
             />
@@ -83,6 +85,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
             name="email" 
             placeholder="name@gmail.com" 
             required 
+            value={formData.email}
             onChange={handleChange} 
             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" 
           />
@@ -91,6 +94,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
             name="password" 
             placeholder="Password" 
             required 
+            value={formData.password}
             onChange={handleChange} 
             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" 
           />
@@ -99,7 +103,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
             disabled={isLoading} 
             className="w-full py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:bg-blue-300"
           >
-            {isLoading ? "Checking..." : isRegistering ? "Register" : "Sign In"}
+            {isLoading ? "Processing..." : isRegistering ? "Register" : "Sign In"}
           </button>
         </form>
 
