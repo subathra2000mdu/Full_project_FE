@@ -16,7 +16,6 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation
     if (!formData.email.toLowerCase().endsWith('@gmail.com')) {
       toast.error("Only @gmail.com addresses are allowed.");
       return;
