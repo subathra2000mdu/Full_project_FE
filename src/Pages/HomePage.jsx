@@ -3,7 +3,7 @@ import API from '../API/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Calendar, Plane, Loader2,
-  AlertCircle, Clock, Users, XCircle, ChevronDown
+  AlertCircle, Clock, Users, ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -18,50 +18,19 @@ const HomePage = () => {
     bookingClass: 'Economy',
   });
 
-  const [flights, setFlights]             = useState([]);
-  const [loading, setLoading]             = useState(false);
-  const [hasSearched, setHasSearched]     = useState(false);
-  const [error, setError]                 = useState('');
+  const [flights, setFlights] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState('');
   const [showClassMenu, setShowClassMenu] = useState(false);
-
-  const [currentBooking, setCurrentBooking]     = useState(null);
-  const [paymentInfo, setPaymentInfo]           = useState(null);
-  const [cancellingId, setCancellingId]         = useState(null);
-  const [cancelledIds, setCancelledIds]         = useState([]);
-  const [cancellationRate, setCancellationRate] = useState(50);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const rawBooking = localStorage.getItem('currentBooking');
-    const rawPayment = localStorage.getItem('paymentInfo');
-    if (rawBooking) { try { setCurrentBooking(JSON.parse(rawBooking)); } catch { /* ignore */ } }
-    if (rawPayment) { try { setPaymentInfo(JSON.parse(rawPayment));    } catch { /* ignore */ } }
-
-    const fetchDashboard = async () => {
-      try {
-        const res     = await API.get('/admin/dashboard');
-        const rateStr = res.data?.cancellationRate || '50%';
-        const rate    = parseFloat(rateStr);
-        if (!isNaN(rate)) setCancellationRate(rate);
-      } catch {
-        setCancellationRate(50);
-      }
-    };
-    fetchDashboard();
-
     const handleClick = () => setShowClassMenu(false);
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, []);
-
-  const isFlightBooked = (flightId) => {
-    if (!currentBooking)                              return false;
-    if (currentBooking.paymentStatus !== 'Completed') return false;
-    if (cancelledIds.includes(currentBooking._id))    return false;
-    const bookedFlightId = currentBooking.flight?._id || currentBooking.flight || '';
-    return bookedFlightId.toString() === flightId.toString();
-  };
 
   const handleSearch = async () => {
     if (!search.from || !search.to) {
@@ -74,10 +43,10 @@ const HomePage = () => {
     try {
       const res = await API.get('/flights/search', {
         params: {
-          from:         search.from.toUpperCase(),
-          to:           search.to.toUpperCase(),
-          date:         search.date || undefined,
-          passengers:   search.passengers,
+          from: search.from.toUpperCase(),
+          to: search.to.toUpperCase(),
+          date: search.date || undefined,
+          passengers: search.passengers,
           bookingClass: search.bookingClass,
         },
       });
@@ -94,37 +63,17 @@ const HomePage = () => {
 
   const handleBookNow = (flight) => {
     const token = localStorage.getItem('userToken');
-    if (!token) { navigate('/login'); return; }
+    if (!token) {
+      toast.error("Please login to book a flight");
+      navigate('/login');
+      return;
+    }
     localStorage.setItem('selectedFlight', JSON.stringify(flight));
     localStorage.setItem('searchMeta', JSON.stringify({
-      passengers:   search.passengers,
+      passengers: search.passengers,
       bookingClass: search.bookingClass,
     }));
     navigate(`/booking/${flight._id}`);
-  };
-
-  const handleCancelTicket = async (flight) => {
-    if (!currentBooking?._id) { toast.error('Booking not found.'); return; }
-    const paidAmount   = paymentInfo?.amount || flight.price || 0;
-    const refundAmount = Math.round(paidAmount * (cancellationRate / 100));
-    const confirmed = window.confirm(
-      `Cancel Ticket Confirmation\n\nFlight : ${flight.airline} (${flight.flightNumber})\nPaid   : Rs.${paidAmount.toLocaleString('en-IN')}\nRefund : Rs.${refundAmount.toLocaleString('en-IN')} (${cancellationRate}%)\n\nAre you sure? This cannot be undone.`
-    );
-    if (!confirmed) return;
-    setCancellingId(currentBooking._id);
-    try {
-      await API.patch(`/bookings/update/${currentBooking._id}`, { paymentStatus: 'Cancelled' });
-      toast.success(`Cancelled! Rs.${refundAmount.toLocaleString('en-IN')} will be refunded.`);
-      setCancelledIds(prev => [...prev, currentBooking._id]);
-      localStorage.removeItem('currentBooking');
-      localStorage.removeItem('paymentInfo');
-      setCurrentBooking(null);
-      setPaymentInfo(null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Cancellation failed.');
-    } finally {
-      setCancellingId(null);
-    }
   };
 
   const formatTime = (dateStr) => {
@@ -149,10 +98,10 @@ const HomePage = () => {
   const getStatusColor = (status) => {
     const map = {
       scheduled: 'bg-green-100 text-green-700',
-      active:    'bg-blue-100 text-blue-700',
-      landed:    'bg-gray-100 text-gray-600',
+      active: 'bg-blue-100 text-blue-700',
+      landed: 'bg-gray-100 text-gray-600',
       cancelled: 'bg-red-100 text-red-700',
-      delayed:   'bg-yellow-100 text-yellow-700',
+      delayed: 'bg-yellow-100 text-yellow-700',
     };
     return map[status?.toLowerCase()] || 'bg-gray-100 text-gray-600';
   };
@@ -166,8 +115,7 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
-
-      
+      {/* Hero & Search Section */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 py-10 sm:py-14 mb-6 sm:mb-8">
         <div className="w-full max-w-6xl mx-auto px-4">
           <div className="text-center mb-6 sm:mb-8">
@@ -175,11 +123,9 @@ const HomePage = () => {
             <p className="text-blue-200 font-medium text-sm sm:text-base">Search flights across India</p>
           </div>
 
-          
           <div className="bg-white rounded-2xl shadow-2xl p-3 sm:p-4 w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-
-              
+              {/* From */}
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <MapPin className="text-blue-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -195,7 +141,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              
+              {/* To */}
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <MapPin className="text-red-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -211,7 +157,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              
+              {/* Date */}
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <Calendar className="text-slate-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -225,7 +171,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              
+              {/* Passengers */}
               <div className="flex items-center px-3 sm:px-4 py-3 bg-slate-50 rounded-xl border">
                 <Users className="text-slate-400 mr-2 shrink-0" size={18} />
                 <div className="w-full min-w-0">
@@ -244,7 +190,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              
+              {/* Class Selection */}
               <div className="relative">
                 <button
                   onClick={e => { e.stopPropagation(); setShowClassMenu(v => !v); }}
@@ -278,7 +224,7 @@ const HomePage = () => {
                 )}
               </div>
 
-              
+              {/* Search Button */}
               <button
                 onClick={handleSearch}
                 disabled={loading}
@@ -289,19 +235,9 @@ const HomePage = () => {
               </button>
             </div>
           </div>
-
-          
-          {hasSearched && (
-            <div className="mt-3 flex items-center justify-center gap-3 text-blue-200 text-xs font-semibold">
-              <span>{search.passengers} passenger{search.passengers > 1 ? 's' : ''}</span>
-              <span>•</span>
-              <span>{search.bookingClass}</span>
-            </div>
-          )}
         </div>
       </div>
 
-      
       {error && (
         <div className="w-full max-w-6xl mx-auto px-4 mb-4">
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -311,9 +247,8 @@ const HomePage = () => {
         </div>
       )}
 
-    
+      {/* Results Section */}
       <div className="w-full max-w-6xl mx-auto px-4">
-
         {loading && (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-blue-600" size={40} />
@@ -322,142 +257,69 @@ const HomePage = () => {
 
         {!loading && hasSearched && displayedFlights.length > 0 && (
           <div className="space-y-3 sm:space-y-4">
-            {search.date && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start sm:items-center gap-2">
-                <Calendar className="text-blue-500 shrink-0 mt-0.5 sm:mt-0" size={16} />
-                <p className="text-blue-700 text-sm font-semibold">
-                  Showing {displayedFlights.length} flight{displayedFlights.length !== 1 ? 's' : ''} on{' '}
-                  {new Date(search.date + 'T00:00:00').toLocaleDateString('en-IN', {
-                    day: 'numeric', month: 'long', year: 'numeric',
-                  })}
-                  {' '}&mdash; {search.passengers} passenger{search.passengers > 1 ? 's' : ''}, {search.bookingClass}
-                </p>
-              </div>
-            )}
-
-            {displayedFlights.map((f) => {
-              const booked       = isFlightBooked(f._id);
-              const isCancelling = cancellingId === currentBooking?._id && booked;
-              const paidAmount   = paymentInfo?.amount || f.price || 0;
-              const refundAmt    = Math.round(paidAmount * (cancellationRate / 100));
-
-              return (
-                <div
-                  key={f._id}
-                  className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
-                    booked
-                      ? 'border-red-200 shadow-md'
-                      : 'border-slate-200 hover:border-blue-200 hover:shadow-lg'
-                  }`}
-                >
-                  <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
-                    
-                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 ${
-                        booked ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
-                      }`}>
-                        <Plane size={22} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className={`font-black text-sm ${booked ? 'text-red-500' : 'text-blue-600'}`}>
-                            {f.airline}
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-slate-400 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">
-                            {f.flightNumber}
-                          </span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${getStatusColor(f.status)}`}>
-                            {f.status}
-                          </span>
-                          {booked && (
-                            <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600">
-                              Your Booking
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                          {f.departureLocation} → {f.arrivalLocation}
-                        </h3>
-                        <div className="flex items-center gap-3 sm:gap-4 mt-1 flex-wrap">
-                          <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                            <Clock size={12} />
-                            {formatTime(f.departureTime)} • {formatDate(f.departureTime)}
-                          </span>
-                          <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                            <Users size={12} /> {f.seatsAvailable} seats left
-                          </span>
-                        </div>
-                        {booked && (
-                          <p className="text-xs text-red-500 font-bold mt-2 bg-red-50 inline-block px-2 py-1 rounded">
-                            Cancellation Refund: Rs.{refundAmt.toLocaleString('en-IN')} ({cancellationRate}%)
-                          </p>
-                        )}
-                      </div>
+            {displayedFlights.map((f) => (
+              <div
+                key={f._id}
+                className="bg-white rounded-2xl border border-slate-200 transition-all duration-200 overflow-hidden hover:border-blue-200 hover:shadow-lg"
+              >
+                <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
+                      <Plane size={22} />
                     </div>
-
-                    
-                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 w-full sm:w-auto shrink-0">
-                      <div className="text-left sm:text-right">
-                        <p className="text-xs text-slate-400 font-semibold">Price</p>
-                        <p className="text-xl sm:text-2xl font-black text-slate-900">
-                          ₹{f.price?.toLocaleString('en-IN')}
-                        </p>
-                        {search.passengers > 1 && (
-                          <p className="text-xs text-slate-400 font-semibold">
-                            Total: ₹{(f.price * search.passengers).toLocaleString('en-IN')}
-                          </p>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-black text-sm text-blue-600">{f.airline}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-400 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">{f.flightNumber}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${getStatusColor(f.status)}`}>
+                          {f.status}
+                        </span>
                       </div>
-
-                      {booked ? (
-                        <button
-                          onClick={() => handleCancelTicket(f)}
-                          disabled={isCancelling}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-black transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-                        >
-                          {isCancelling
-                            ? <Loader2 className="animate-spin" size={15} />
-                            : <XCircle size={15} />
-                          }
-                          {isCancelling ? 'Cancelling...' : 'Cancel Ticket'}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleBookNow(f)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-black transition shadow-md whitespace-nowrap"
-                        >
-                          Book Now →
-                        </button>
-                      )}
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                        {f.departureLocation} → {f.arrivalLocation}
+                      </h3>
+                      <div className="flex items-center gap-3 sm:gap-4 mt-1 flex-wrap">
+                        <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
+                          <Clock size={12} />
+                          {formatTime(f.departureTime)} • {formatDate(f.departureTime)}
+                        </span>
+                        <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
+                          <Users size={12} /> {f.seatsAvailable} seats left
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 w-full sm:w-auto shrink-0">
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs text-slate-400 font-semibold">Price</p>
+                      <p className="text-xl sm:text-2xl font-black text-slate-900">
+                        ₹{f.price?.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleBookNow(f)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-black transition shadow-md whitespace-nowrap"
+                    >
+                      Book Now →
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 
-        
-        {!loading && hasSearched && flights.length > 0 && displayedFlights.length === 0 && (
-          <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
-            <Calendar className="mx-auto text-slate-200 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800">No Flights on Selected Date</h3>
-            <p className="text-slate-500 text-sm mt-1">Try a different date or search without a date.</p>
-          </div>
-        )}
-
-       
-        {!loading && hasSearched && flights.length === 0 && (
+        {/* Empty States */}
+        {!loading && hasSearched && displayedFlights.length === 0 && (
           <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
             <AlertCircle className="mx-auto text-slate-200 mb-4" size={48} />
             <h3 className="text-lg font-bold text-slate-800">No Flights Found</h3>
-            <p className="text-slate-500 text-sm mt-1">Try different IATA codes or date.</p>
+            <p className="text-slate-500 text-sm mt-1">Try different locations or dates.</p>
           </div>
         )}
 
-       
         {!loading && !hasSearched && (
           <div className="bg-white border rounded-3xl p-12 sm:p-20 text-center">
             <Plane className="mx-auto text-slate-200 mb-4" size={48} />
