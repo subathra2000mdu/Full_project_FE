@@ -16,6 +16,7 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validation
     if (!formData.email.toLowerCase().endsWith('@gmail.com')) {
       toast.error("Only @gmail.com addresses are allowed.");
       return;
@@ -24,9 +25,11 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = isRegistering ? "/register" : "/login";
+      
+      const endpoint = isRegistering ? "/register" : "/login"; 
+      
       const payload = isRegistering 
-        ? formData 
+        ? { name: formData.name, email: formData.email, password: formData.password } 
         : { email: formData.email, password: formData.password };
 
       const response = await API.post(endpoint, payload);
@@ -35,23 +38,26 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
       if (isRegistering) {
         toast.success("Account created! Please sign in.");
         setIsRegistering(false);
+        setFormData({ name: '', email: '', password: '' }); 
       } else {
-        // Handle successful login
+        
         const finalName = data.user?.name || formData.email.split('@')[0];
         
         localStorage.setItem('userToken', data.token);
         localStorage.setItem('userName', finalName);
+        localStorage.setItem('userEmail', formData.email); 
         
         setUserName(finalName);
         setIsAuthenticated(true);
         toast.success(`Welcome back, ${finalName}!`);
         
-        // Redirect to home after login
         navigate('/'); 
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || "Authentication failed. Please check your details.";
+      
+      const errMsg = err.response?.data?.message || "Server Error: Registration failed.";
       toast.error(errMsg);
+      console.error("Auth Error:", err.response?.data);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +115,10 @@ const LoginPage = ({ setIsAuthenticated, setUserName }) => {
         <p className="mt-8 text-center text-xs text-gray-500">
           {isRegistering ? "Already have an account?" : "Don't have an account?"} 
           <span 
-            onClick={() => setIsRegistering(!isRegistering)} 
+            onClick={() => {
+              setIsRegistering(!isRegistering);
+              setFormData({ name: '', email: '', password: '' });
+            }} 
             className="text-blue-600 cursor-pointer font-bold ml-1 hover:underline"
           >
             {isRegistering ? "Login" : "Register"}

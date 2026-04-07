@@ -1,16 +1,12 @@
-
 import axios from 'axios';
 
-const API = axios.create({
+const axiosInstance = axios.create({
   baseURL: 'https://flight-booking-p4qy.onrender.com/api/auth',
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
-API.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('userToken'); 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -19,16 +15,4 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userName');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default API;
+export default axiosInstance;

@@ -57,8 +57,8 @@ const AnalyticsDashboard = () => {
   
   const routeMap = {};
   bookings.forEach(b => {
-    if (b.flight?.departureLocation && b.flight?.arrivalLocation) {
-      const key = `${b.flight.departureLocation} → ${b.flight.arrivalLocation}`;
+   if (b.flight?.departureLocation && b.flight?.arrivalLocation) {
+  const key = `${b.flight.departureLocation} → ${b.flight.arrivalLocation}`;
       routeMap[key] = (routeMap[key] || 0) + 1;
     }
   });
@@ -90,7 +90,7 @@ const AnalyticsDashboard = () => {
     const key = l.action || 'Unknown';
     actionMap[key] = (actionMap[key] || 0) + 1;
   });
-  const actionBreakdown = Object.entries(actionMap).sort((a, b) => b[1] - a[1]);
+ // const actionBreakdown = Object.entries(actionMap).sort((a, b) => b[1] - a[1]);
 
   
   const airlineMap = {};
@@ -320,25 +320,7 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      {activityLogs.length > 0 && (
-        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6 mb-4 sm:mb-6">
-          <h2 className="text-base sm:text-lg font-black text-slate-900 mb-1">Activity Log Summary</h2>
-          <p className="text-xs text-slate-400 font-semibold mb-5 sm:mb-6">Breakdown of all user actions</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {actionBreakdown.map(([action, count]) => {
-              const style = ACTION_CARD_STYLES[action] || {
-                bg: 'bg-slate-50', text: 'text-slate-700', badge: 'text-slate-600',
-              };
-              return (
-                <div key={action} className={`${style.bg} rounded-xl sm:rounded-2xl p-4 text-center border border-slate-100`}>
-                  <p className={`text-2xl sm:text-3xl font-black ${style.badge}`}>{count}</p>
-                  <p className={`text-xs font-black uppercase tracking-wider mt-1 ${style.text}`}>{action}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      
 
 
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
